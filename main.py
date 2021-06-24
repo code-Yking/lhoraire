@@ -12,7 +12,7 @@ import math
 D0 = datetime(2000, 1, 1)
 
 
-class start():
+class TaskGenerator():
     def __init__(self):
 
         d_today = datetime.now()
@@ -74,11 +74,17 @@ class TaskModel():
         self.k = work
         self.h = week_day_work
 
+        # if the task is big, more than 10 hours of work
         if self.k > 10:
             # get c value with least final day area
             self.c = optimize.root_scalar(                  # c is the flexibility variable
-                self.for_c, bracket=[0, 3], method='brentq').root       # todo fix the bracket
+                self.c_for_huge, bracket=[0, 3], method='brentq').root       # todo fix the bracket
 
+        # if the task is small, less than or equal 10 hours of work
+        elif self.k <= 10:
+            # no of days needed is estimated to H / H**(1/3)
+            self.c = (3*self.k**(1/3)-1)/3
+            self.h = self.c + 1         # todo when this h is more than min threshold
         # todo work on c which can be customized according to users no of day
 
         # duration
@@ -91,6 +97,7 @@ class TaskModel():
         # if the initial date is less than 0
         if self.start_day < 0:           # todo make this today
             # c gets re-evaluate according to condition
+            self.h = week_day_work
             self.c = (3*self.k/self.due - self.h)/2
             self.start_day = 0                               # start date is made 0
         elif days != 0:
@@ -101,12 +108,13 @@ class TaskModel():
         total_area = scipy.integrate.quad(
             self.model, self.start_day, self.due)[0]
 
-        print('c: ', self.c)
-        print('area: ', round(total_area, 4))
+        print('c: ', self.c, 'h: ', self.h)
+        print('total area: ', round(total_area, 4))
 
         self.generate_list()
 
-    def for_c(self, x):                     # used to find min area for final day. Used only for default
+    # used to find min area for final day. Used only for default (large) tasks
+    def c_for_huge(self, x):
         return (-8*x**3 - 4*self.h*x**2 + 16*self.k*x**2 + 2*self.h**2*x - 6*self.k **
                 2*x + 4*self.h*self.k*x + self.h**3 - 3*self.h*self.k**2 - 2*self.h**2*self.k)/(3*self.k**2*(2*x+self.h))+1
 
