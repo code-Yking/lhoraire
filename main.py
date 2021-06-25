@@ -69,7 +69,8 @@ class TaskGenerator():
 
 
 class TaskModel():
-    def __init__(self, due, work, week_day_work, week_end_work=0, days=0):
+    def __init__(self, due, work, week_day_work, week_end_work=0, days=0, gradient='+'):
+        # TODO do gradient shifts
         self.due = due
         self.k = work
         self.h = week_day_work
@@ -78,14 +79,15 @@ class TaskModel():
         if self.k > 10:
             # get c value with least final day area
             self.c = optimize.root_scalar(                  # c is the flexibility variable
-                self.c_for_huge, bracket=[0, 3], method='brentq').root       # todo fix the bracket
+                self.c_for_huge, bracket=[0, 3], method='brentq').root       # TODO fix the bracket
 
         # if the task is small, less than or equal 10 hours of work
         elif self.k <= 10:
             # no of days needed is estimated to H / H**(1/3)
+            # this will make sure that the final gradient is around 1
             self.c = (3*self.k**(1/3)-1)/3
-            self.h = self.c + 1         # todo when this h is more than min threshold
-        # todo work on c which can be customized according to users no of day
+            self.h = self.c + 1         # TODO when this h is more than min threshold
+        # TODO work on c which can be customized according to users no of day
 
         # duration
         self.n = 3*self.k/(self.h+2*self.c)
@@ -93,16 +95,33 @@ class TaskModel():
         # the start date of the task
         # d0 = D-n
         self.start_day = self.due-self.n
+
         print('n: ', self.n)
+
         # if the initial date is less than 0
-        if self.start_day < 0:           # todo make this today
+        if self.start_day < 0:           # TODO make this today
             # c gets re-evaluate according to condition
             self.h = week_day_work
             self.c = (3*self.k/self.due - self.h)/2
-            self.start_day = 0                               # start date is made 0
-        elif days != 0:
+            self.n = self.due                               # set duration as days to due
+            # start date is made 0, current date
+            self.start_day = 0
+        # if user requires a no of days and its NOT less than min
+        elif days != 0 and self.due - days > 0:
+            # TODO make sure this works
             self.c = (3*self.k/days - self.h)/2
             self.start_day = self.due-days
+
+        # TODO flip according to limitation
+        if (gradient == '-' and self.k/self.due < self.h) or (gradient == '+' and self.k/self.due > self.h):
+            self.h = self.c
+            self.c = (3*self.k/self.n - self.h)/2
+
+        if gradient == '0':
+            self.n = days if days != 0 else self.k / \
+                self.k**(1/3) if self.k/self.k**(1/3) < self.due else self.due
+            self.c = self.k/self.n
+            self.h = self.c
 
         # total area, for checking
         total_area = scipy.integrate.quad(
@@ -132,12 +151,11 @@ class TaskModel():
                                    area(self.start_day, math.ceil(self.start_day))))
 
         for n in range(math.ceil(self.start_day), self.due):
-            # print(f'Day {n+1}: ', area(n, n+1))
             self.task_days.append((n+1, area(n, n+1)))
 
 
 if __name__ == "__main__":
     d = int(input('Days to due: '))
     w = int(input('Hrs of work: '))
-    task = TaskModel(due=d, work=w, week_day_work=6, days=0)
+    task = TaskModel(due=d, work=w, week_day_work=6, days=0, gradient='0')
     print(task.task_days)
