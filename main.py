@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import pprint
 
 # from sympy.solvers import solve
 # from sympy import Symbol, N, integrate, expand
@@ -69,8 +70,7 @@ class TaskGenerator():
 
 
 class TaskModel():
-    def __init__(self, due, work, week_day_work, week_end_work=0, days=0, gradient='+'):
-        # TODO do gradient shifts
+    def __init__(self, due, work, week_day_work, week_end_work=0, days=0, gradient='+', id=0):
         self.due = due
         self.k = work
         self.h = week_day_work
@@ -141,21 +141,73 @@ class TaskModel():
         return (self.h - self.c)/(3*self.k/(self.h+2*self.c))**2 * (x-self.due + 3*self.k/(self.h+2*self.c))**2 + self.c
 
     def generate_list(self):
-        self.task_days = []
+        task_days = []
 
         def area(start, end): return scipy.integrate.quad(
             self.model, start, end)[0]
 
         if not float(self.start_day).is_integer():
-            self.task_days.append(((math.ceil(self.start_day)),
-                                   area(self.start_day, math.ceil(self.start_day))))
+            task_days.append(((math.ceil(self.start_day)),
+                              area(self.start_day, math.ceil(self.start_day))))
 
         for n in range(math.ceil(self.start_day), self.due):
-            self.task_days.append((n+1, area(n, n+1)))
+            task_days.append((n+1, area(n, n+1)))
+
+        return task_days
+
+
+def dummy_start():
+    n = 1
+    task_cumulation = {}
+    name = input(f'Task No. {n} Name (blank to cancel): ')
+
+    while name != "":
+        d = int(input('Days to due: '))
+        w = int(input('Hrs of work: '))
+        g = input('Gradient (+/-/0): ')
+        task = TaskModel(id=n, due=d, work=w,
+                         week_day_work=6, days=0, gradient=g)
+        task_cumulation[(n, name, d)] = task.generate_list()
+
+        n = n+1
+        name = input(f'Task No. {n} Name (blank to cancel): ')
+
+    scheduleCumulation(task_cumulation)
+
+
+def scheduleCumulation(tasks):
+    schedule_cumulation = {}
+    for task, days in tasks.items():
+        for n in days:
+            if n[0] in schedule_cumulation:
+                schedule_cumulation[n[0]]['quots'].append(
+                    (n[1], f't{task[0]}')
+                )
+                schedule_cumulation[n[0]
+                                    ]['data']['days_to_due'][f't{task[0]}'] = task[2]
+            else:
+                schedule_cumulation[n[0]] = {
+                    'quots': [(n[1], f't{task[0]}')],
+                    'data': {'days_to_due': {f't{task[0]}': task[2]}}
+                }
+
+    for day, data in schedule_cumulation.items():
+        sum = 0
+
+        for task in data['quots']:
+            sum = sum + task[0]
+
+        percent_of_work = {task[1]: task[0]/sum for task in data['quots']}
+
+        data['data']['sum'] = sum
+        data['data']['percent_of_work'] = percent_of_work
+
+    pprint.pprint(schedule_cumulation)
 
 
 if __name__ == "__main__":
-    d = int(input('Days to due: '))
-    w = int(input('Hrs of work: '))
-    task = TaskModel(due=d, work=w, week_day_work=6, days=0, gradient='0')
-    print(task.task_days)
+    # d = int(input('Days to due: '))
+    # w = int(input('Hrs of work: '))
+    # task = TaskModel(due=d, work=w, week_day_work=6, days=0, gradient='0')
+    # print(task.generate_list())
+    dummy_start()
