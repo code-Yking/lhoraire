@@ -1,6 +1,5 @@
 from datetime import datetime
 import json
-import pprint
 
 # from sympy.solvers import solve
 # from sympy import Symbol, N, integrate, expand
@@ -10,7 +9,7 @@ from scipy import optimize
 
 import math
 
-from helpers import scheduleCumulation
+from reposition import Reposition
 
 D0 = datetime(2000, 1, 1)
 
@@ -174,7 +173,7 @@ def dummy_start():
         n = n+1
         name = input(f'Task No. {n} Name (blank to cancel): ')
 
-    scheduleCumulation(task_cumulation, 6)
+    Reposition(task_cumulation, 6, 2)
 
 
 if __name__ == "__main__":
