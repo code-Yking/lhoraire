@@ -10,6 +10,7 @@ from scipy import optimize
 import math
 
 from reposition import Reposition
+from helpers import getDateDelta
 
 D0 = datetime(2000, 1, 1)
 
@@ -17,10 +18,9 @@ D0 = datetime(2000, 1, 1)
 class TaskGenerator():
     def __init__(self):
 
-        d_today = datetime.now()
+        d_today = datetime.now()        # today's date
 
-        deltaTime = d_today - D0
-        self.delta = deltaTime.days
+        self.delta = getDateDelta(d_today)
         print("Now: ", self.delta)
 
         self.addition()
@@ -35,7 +35,7 @@ class TaskGenerator():
             task_info = {
                 'id': n,
                 'details': task,
-                'due': str(datetime.fromisoformat(input('Due: '))),
+                'due': str(input('Due: ')),
                 'hours_needed': int(input('Hours Needed: '))
             }
             self.task_list.append(task_info)
@@ -61,13 +61,12 @@ class TaskGenerator():
             data = json.load(json_file)
 
         for n in data:
-            due_date = datetime.fromisoformat((n['due']))
-            work_start_delta = (due_date - D0).days
+            due_date = getDateDelta(n['due'])
             # if (due_date - datetime.now()).days > 0 and (due_date - datetime.now()).days <= n['hours_needed']:
             #     work_start_delta = (due_date - D0).days - n['hours_needed']
-            print(work_start_delta)
+            print(due_date)
 
-            TaskModel(due=12, work=10, week_day_work=6)
+            # TaskModel(due=12, work=10, week_day_work=6)
 
 
 class TaskModel():
@@ -131,7 +130,7 @@ class TaskModel():
         print('c: ', self.c, 'h: ', self.h)
         print('total area: ', round(total_area, 4))
 
-        self.generate_list()
+        # self.generate_list()
 
     # used to find min area for final day. Used only for default (large) tasks
     def c_for_huge(self, x):
@@ -168,12 +167,12 @@ def dummy_start():
         g = input('Gradient (+/-/0): ')
         task = TaskModel(id=n, due=d, work=w,
                          week_day_work=6, days=0, gradient=g)
-        task_cumulation[(n, name, d)] = task.generate_list()
+        task_cumulation[(n, name, d)] = task
 
         n = n+1
         name = input(f'Task No. {n} Name (blank to cancel): ')
 
-    Reposition(task_cumulation, 6, 2)
+    a = Reposition(task_cumulation, 6, 2)
 
 
 if __name__ == "__main__":
@@ -181,4 +180,5 @@ if __name__ == "__main__":
     # w = int(input('Hrs of work: '))
     # task = TaskModel(due=d, work=w, week_day_work=6, days=0, gradient='0')
     # print(task.generate_list())
-    dummy_start()
+    # dummy_start()
+    TaskGenerator()
