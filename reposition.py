@@ -1,4 +1,5 @@
 import pprint
+from helpers import getDatefromDelta
 
 
 class Reposition:
@@ -10,7 +11,7 @@ class Reposition:
         sched_cumul_data = self.schedule_cumulation()
 
         processed = self.process_data(sched_cumul_data)
-        pprint.pprint(processed)
+        # pprint.pprint(processed)
 
     def schedule_cumulation(self):
         schedule_cumulation = {}
@@ -18,7 +19,9 @@ class Reposition:
             days = task_object.generate_list()
 
             for day in days:
-                date = day[0]
+
+                date_delta = day[0]
+                date = getDatefromDelta(date_delta)
                 task_area = day[1]
 
                 task_id = f't{task_info[0]}'
@@ -34,7 +37,7 @@ class Reposition:
                         'quots': [(task_area, task_id)],
                         'data': {
                             'days_to_due': {
-                                task_id: due_date - date + 1
+                                task_id: due_date - date_delta + 1
                             }
                         }
                     }
