@@ -9,7 +9,7 @@ def getDateDelta(date):
         date = datetime.fromisoformat(date)
 
     delta = date - D0
-    return delta.days
+    return delta.days - 1               # - 1 to fix the final date as the date before due
 
 
 def getDatefromDelta(delta):
