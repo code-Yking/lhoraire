@@ -97,8 +97,6 @@ class TaskModel():
         # d0 = D-n
         self.start_day = self.due_date-self.n
 
-        print('n: ', self.n)
-
         # if the initial date is less than 0
         if self.start_day < today:           # TODO make this today by getting a relative time for due date
             # c gets re-evaluate according to condition
@@ -130,6 +128,7 @@ class TaskModel():
         total_area = scipy.integrate.quad(
             self.model, self.start_day, self.due_date)[0]
 
+        print('n: ', self.n)
         print('c: ', self.c, 'h: ', self.h)
         print('total area: ', round(total_area, 4))
 
@@ -168,8 +167,10 @@ def dummy_start():
         d = getDateDelta(input('Due date: '))
         w = int(input('Hrs of work: '))
         g = input('Gradient (+/-/0): ')
+
+        # assumed no work can be done on the day of creation
         task = TaskModel(id=n, due=d, work=w,
-                         week_day_work=6, days=0, gradient=g, today=getDateDelta(datetime.now()))
+                         week_day_work=6, days=0, gradient=g, today=getDateDelta(datetime.now()) + 1)
         task_cumulation[(n, name, d)] = task
 
         n = n+1
