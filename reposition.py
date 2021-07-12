@@ -12,7 +12,8 @@ class Reposition:
 
         processed, day_freedom = self.process_data(sched_cumul_data)
         pprint.pprint(processed)
-        print(day_freedom)
+        # print(day_freedom)
+        self.fix_difference(processed)
 
     def schedule_cumulation(self):
         schedule_cumulation = {}
@@ -30,13 +31,13 @@ class Reposition:
                 due_date = task_info[2]
 
                 if date in schedule_cumulation:
-                    schedule_cumulation[date]['quots'].append(
-                        (task_area, task_id)
-                    )
+                    schedule_cumulation[date]['quots'][task_id] = task_area
                     schedule_cumulation[date]['data']['days_to_due'][task_id] = due_date - date + 1
                 else:
                     schedule_cumulation[date] = {
-                        'quots': [(task_area, task_id)],
+                        'quots': {
+                            task_id: task_area
+                        },
                         'data': {
                             'days_to_due': {
                                 task_id: due_date - date_delta + 1
@@ -54,24 +55,24 @@ class Reposition:
         for day, info in schedule_cumulation.items():
             sum_of_area = 0
 
-            for task_info in info['quots']:
-                sum_of_area = sum_of_area + task_info[0]
+            for task_id, quote in info['quots'].items():
+                sum_of_area = sum_of_area + quote
 
-            sum_of_dues = 0
-            percent_of_work = {task[1]: task[0] /
-                               sum_of_area for task in info['quots']}
+            # percent_of_work = {task_id: quote /
+            #                    sum_of_area for task_id, quote in info['quots'].items()}
 
-            for task_info, days_to_due in info['data']['days_to_due'].items():
-                sum_of_dues = sum_of_dues + days_to_due
+            # sum_of_dues = 0
+            # for task_id, days_to_due in info['data']['days_to_due'].items():
+            #     sum_of_dues = sum_of_dues + days_to_due
 
-            # TODO move this down
-            percent_of_dues = {task: d/sum_of_dues for task,
-                               d in info['data']['days_to_due'].items()}
+            # # TODO move this down
+            # percent_of_dues = {task: d/sum_of_dues for task,
+            #                    d in info['data']['days_to_due'].items()}
 
-            info['data']['sum'] = sum_of_area
+            # info['data']['sum'] = sum_of_area
             info['data']['difference'] = self.week_day_work - sum_of_area
-            info['data']['percent_of_work'] = percent_of_work
-            info['data']['percent_of_dues'] = percent_of_dues
+            # info['data']['percent_of_work'] = percent_of_work
+            # info['data']['percent_of_dues'] = percent_of_dues
 
             work_scale = sum_of_area/self.week_day_work
 
@@ -102,12 +103,47 @@ class Reposition:
     # use percent_of_dues and find which proportion of which to move out
     # use differences to find close days to relocate
 
-    def fix_difference(self, schedule_cumulation, day_scale):
-        to_reschedule = []
+    def fix_difference(self, schedule_cumulation, day_scale=None):
+        to_reschedule = {}
+
         for day, info in schedule_cumulation.items():
             diff = info['data']['difference']
-            if diff >= 0:
+
+            if diff >= 0:               # day is skipped if there is no difference
                 pass
             else:
-                for task in info['quots']:
-                    pass
+                i = 1
+                while i < 2:
+                    if info['data']['difference'] <= 0:
+                        break
+                    sum_of_dues = 0
+
+                    for task_id, days_to_due in info['data']['days_to_due'].items():
+                        sum_of_dues = sum_of_dues + days_to_due
+
+                    portion_needed = {task: d/sum_of_dues * abs(info['data']['difference']) for task,
+                                      d in info['data']['days_to_due'].items()}
+                    print(portion_needed)
+                    for task_id, quote in info['quots'].items():
+                        print(task_id)
+                        if quote > portion_needed[task_id]:
+                            info['quots'][task_id] = quote - \
+                                portion_needed[task_id]
+                            to_reschedule[task_id] = portion_needed[task_id]
+                            info['data']['difference'] = info['data']['difference'] + \
+                                portion_needed[task_id]
+
+                        elif quote == portion_needed[task_id]:
+                            to_reschedule[task_id] = portion_needed[task_id]
+                            info['quots'].pop(task_id)
+                            info['data']['days_to_due'].pop(task_id)
+                            info['data']['difference'] = info['data']['difference'] + \
+                                portion_needed[task_id]
+
+                        elif quote < portion_needed[task_id]:
+                            to_reschedule[task_id] = quote
+                            info['data']['difference'] = info['data']['difference'] + quote
+                            info['quots'].pop(task_id)
+                            info['data']['days_to_due'].pop(task_id)
+                    i = i+1
+        print(to_reschedule)
