@@ -11,7 +11,7 @@ class Reposition:
         sched_cumul_data = self.schedule_cumulation()
 
         processed, day_freedom = self.process_data(sched_cumul_data)
-        pprint.pprint(processed)
+        # pprint.pprint(processed)
         # print(day_freedom)
         self.fix_difference(processed)
 
@@ -112,9 +112,9 @@ class Reposition:
             if diff >= 0:               # day is skipped if there is no difference
                 pass
             else:
-                i = 1
+                i = 0               # to allow for small task hours which might not be able to provide
                 while i < 2:
-                    if info['data']['difference'] <= 0:
+                    if info['data']['difference'] >= 0:
                         break
                     sum_of_dues = 0
 
@@ -123,27 +123,53 @@ class Reposition:
 
                     portion_needed = {task: d/sum_of_dues * abs(info['data']['difference']) for task,
                                       d in info['data']['days_to_due'].items()}
-                    print(portion_needed)
+                    # print(portion_needed)
                     for task_id, quote in info['quots'].items():
-                        print(task_id)
                         if quote > portion_needed[task_id]:
                             info['quots'][task_id] = quote - \
                                 portion_needed[task_id]
-                            to_reschedule[task_id] = portion_needed[task_id]
+
+                            if task_id in to_reschedule.keys():
+                                to_reschedule[task_id] = to_reschedule[task_id] + \
+                                    portion_needed[task_id]
+                            else:
+                                to_reschedule[task_id] = portion_needed[task_id]
+
                             info['data']['difference'] = info['data']['difference'] + \
                                 portion_needed[task_id]
 
                         elif quote == portion_needed[task_id]:
-                            to_reschedule[task_id] = portion_needed[task_id]
+
+                            if task_id in to_reschedule.keys():
+                                to_reschedule[task_id] = to_reschedule[task_id] + \
+                                    portion_needed[task_id]
+                            else:
+                                to_reschedule[task_id] = portion_needed[task_id]
+
                             info['quots'].pop(task_id)
                             info['data']['days_to_due'].pop(task_id)
                             info['data']['difference'] = info['data']['difference'] + \
                                 portion_needed[task_id]
 
                         elif quote < portion_needed[task_id]:
-                            to_reschedule[task_id] = quote
+
+                            if task_id in to_reschedule.keys():
+                                to_reschedule[task_id] = to_reschedule[task_id] + quote
+                            else:
+                                to_reschedule[task_id] = quote
+
                             info['data']['difference'] = info['data']['difference'] + quote
                             info['quots'].pop(task_id)
                             info['data']['days_to_due'].pop(task_id)
                     i = i+1
-        print(to_reschedule)
+        # print('to_reschedule: ', to_reschedule)
+        # pprint.pprint(schedule_cumulation)
+
+        reschedule_table = {'G': {}, 'Y': {}, 'O': {}, 'R': {}}
+
+        for task_id, reschedulable in to_reschedule.items():
+            reschedule_table['G'][task_id] = reschedulable * 1/2
+            reschedule_table['Y'][task_id] = reschedulable * 1/3
+            reschedule_table['O'][task_id] = reschedulable * 1/6
+
+        print(reschedule_table)
