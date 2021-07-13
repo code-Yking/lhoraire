@@ -8,12 +8,14 @@ class Reposition:
         self.week_day_work = week_day_work
         self.week_end_work = week_end_work
 
-        sched_cumul_data = self.schedule_cumulation()
+        self.schedule = self.schedule_cumulation()
+        self.day_scale = []
 
-        processed, day_freedom = self.process_data(sched_cumul_data)
+        self.process_data()
+        # processed, day_freedom = self.process_data(self.schedule)
         # pprint.pprint(processed)
         # print(day_freedom)
-        self.fix_difference(processed)
+        self.fix_difference()
 
     def schedule_cumulation(self):
         schedule_cumulation = {}
@@ -47,12 +49,12 @@ class Reposition:
         # pprint.pprint(schedule_cumulation)
         return schedule_cumulation
 
-    def process_data(self, cumulation):
-        schedule_cumulation = cumulation
+    def process_data(self, cumulation=None):
+        # schedule_cumulation = cumulation
 
         yellow_days, orange_days, red_days = [], [], []
 
-        for day, info in schedule_cumulation.items():
+        for day, info in self.schedule.items():
             sum_of_area = 0
 
             for task_id, quote in info['quots'].items():
@@ -83,13 +85,13 @@ class Reposition:
             elif work_scale > 0.9:
                 red_days.append(day)
 
-        return schedule_cumulation, [yellow_days, orange_days, red_days]
+        self.day_scale = [yellow_days, orange_days, red_days]
 
     # PLAN:
     # cream off from week days, before or after according to gradient
     # not a problem if no of days get reduced as this is max days needed.
 
-    def fix_weekends(self):
+    def fix_weekends(self, schedule_cumulation, to_reschedule):
         work_difference = self.week_end_work - self.week_day_work
 
         if work_difference > 0:
@@ -103,10 +105,13 @@ class Reposition:
     # use percent_of_dues and find which proportion of which to move out
     # use differences to find close days to relocate
 
-    def fix_difference(self, schedule_cumulation, day_scale=None):
+    def fix_difference(self, schedule_cumulation=None, day_scale=None):
+        to_reschedule = self.tasks_to_reschedule()
+
+    def tasks_to_reschedule(self, schedule_cumulation=None):
         to_reschedule = {}
 
-        for day, info in schedule_cumulation.items():
+        for day, info in self.schedule.items():
             diff = info['data']['difference']
 
             if diff >= 0:               # day is skipped if there is no difference
@@ -162,8 +167,10 @@ class Reposition:
                             info['quots'].pop(task_id)
                             info['data']['days_to_due'].pop(task_id)
                     i = i+1
+
+        # pprint.pprint(self.schedule)
+        return to_reschedule
         # print('to_reschedule: ', to_reschedule)
-        # pprint.pprint(schedule_cumulation)
 
         reschedule_table = {'G': {}, 'Y': {}, 'O': {}, 'R': {}}
 
@@ -173,3 +180,7 @@ class Reposition:
             reschedule_table['O'][task_id] = reschedulable * 1/6
 
         print(reschedule_table)
+
+    def get_overlaps(self, schedule_cumulation):
+        for day, info in schedule_cumulation.items():
+            no_of_tasks = len(info['quots'].keys())
