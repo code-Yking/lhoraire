@@ -14,4 +14,16 @@ def getDateDelta(date):
 
 def getDatefromDelta(delta):
     date = D0 + timedelta(days=delta)
-    return date.strftime("%Y/%m/%d")
+    return date.strftime("%Y-%m-%d")
+
+
+def isWeekend(date):
+    date = datetime.fromisoformat(date)
+
+    weekno = date.weekday()
+    if weekno == 5:
+        return 1
+    elif weekno == 6:
+        return 2
+    else:
+        return 0

@@ -85,7 +85,7 @@ def dummy_start():
         n = n+1
         name = input(f'Task No. {n} Name (blank to cancel): ')
 
-    a = Reposition(task_cumulation, 6, 2)
+    a = Reposition(task_cumulation, 6, 10)
 
 
 if __name__ == "__main__":

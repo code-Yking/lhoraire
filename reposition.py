@@ -1,5 +1,5 @@
 import pprint
-from helpers import getDatefromDelta
+from helpers import getDatefromDelta, isWeekend
 
 
 class Reposition:
@@ -8,8 +8,10 @@ class Reposition:
         self.week_day_work = week_day_work
         self.week_end_work = week_end_work
 
-        self.schedule = self.schedule_cumulation()
         self.day_scale = []
+        self.to_reschedule = {}
+        self.task_range = {}
+        self.schedule = self.schedule_cumulation()
 
         self.process_data()
         # processed, day_freedom = self.process_data(self.schedule)
@@ -19,8 +21,12 @@ class Reposition:
 
     def schedule_cumulation(self):
         schedule_cumulation = {}
+
         for task_info, task_object in self.tasks.items():
             days = task_object.generate_list()
+
+            task_id = f't{task_info[0]}'
+            due_date = task_object.due_date
 
             for day in days:
 
@@ -28,9 +34,6 @@ class Reposition:
                 date = day[0]
                 # date = getDatefromDelta(date_delta)
                 task_area = day[1]
-
-                task_id = f't{task_info[0]}'
-                due_date = task_info[2]
 
                 if date in schedule_cumulation:
                     schedule_cumulation[date]['quots'][task_id] = task_area
@@ -46,10 +49,12 @@ class Reposition:
                             }
                         }
                     }
-        # pprint.pprint(schedule_cumulation)
+
+            start_date = task_object.start_day
+            self.task_range[task_id] = (start_date, due_date)
         return schedule_cumulation
 
-    def process_data(self, cumulation=None):
+    def process_data(self):
         # schedule_cumulation = cumulation
 
         yellow_days, orange_days, red_days = [], [], []
@@ -82,12 +87,29 @@ class Reposition:
     # cream off from week days, before or after according to gradient
     # not a problem if no of days get reduced as this is max days needed.
 
-    def fix_weekends(self, schedule_cumulation, to_reschedule):
+    def fix_weekends(self):
         work_difference = self.week_end_work - self.week_day_work
+        weekend_tasks = {"1": {}, "2": {}}
+
+        for day, info in self.schedule.items():
+            date = getDatefromDelta(day)
+
+            is_weekend = isWeekend(date)
+            if is_weekend:
+                # print(day, date)
+                for task, day_range in self.task_range.items():
+                    if int(day) in range(int(day_range[0]), int(day_range[1])+1):
+                        print(task)
+
+                        if task in weekend_tasks[str(is_weekend)].keys():
+                            weekend_tasks[str(is_weekend)][task].append(day)
+                        else:
+                            weekend_tasks[str(is_weekend)][task] = [day]
+
+        print(weekend_tasks)
 
         if work_difference > 0:
             pass
-
         if work_difference < 0:
             pass
 
@@ -96,10 +118,11 @@ class Reposition:
     # use percent_of_dues and find which proportion of which to move out
     # use differences to find close days to relocate
 
-    def fix_difference(self, schedule_cumulation=None, day_scale=None):
-        to_reschedule = self.tasks_to_reschedule()
+    def fix_difference(self):
+        self.to_reschedule = self.basic_reschedule()
+        self.fix_weekends()
 
-    def tasks_to_reschedule(self, schedule_cumulation=None):
+    def basic_reschedule(self):
         to_reschedule = {}
 
         for day, info in self.schedule.items():
