@@ -63,18 +63,9 @@ class Reposition:
             # percent_of_work = {task_id: quote /
             #                    sum_of_area for task_id, quote in info['quots'].items()}
 
-            # sum_of_dues = 0
-            # for task_id, days_to_due in info['data']['days_to_due'].items():
-            #     sum_of_dues = sum_of_dues + days_to_due
-
-            # # TODO move this down
-            # percent_of_dues = {task: d/sum_of_dues for task,
-            #                    d in info['data']['days_to_due'].items()}
-
             # info['data']['sum'] = sum_of_area
             info['data']['difference'] = self.week_day_work - sum_of_area
             # info['data']['percent_of_work'] = percent_of_work
-            # info['data']['percent_of_dues'] = percent_of_dues
 
             work_scale = sum_of_area/self.week_day_work
 
