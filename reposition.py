@@ -68,7 +68,7 @@ class Reposition:
             # percent_of_work = {task_id: quote /
             #                    sum_of_area for task_id, quote in info['quots'].items()}
 
-            # info['data']['sum'] = sum_of_area
+            info['data']['sum'] = sum_of_area
             info['data']['difference'] = self.week_day_work - sum_of_area
             # info['data']['percent_of_work'] = percent_of_work
 
@@ -99,12 +99,18 @@ class Reposition:
                 # print(day, date)
                 for task, day_range in self.task_range.items():
                     if int(day) in range(int(day_range[0]), int(day_range[1])+1):
-                        print(task)
-
-                        if task in weekend_tasks[str(is_weekend)].keys():
-                            weekend_tasks[str(is_weekend)][task].append(day)
+                        if day not in weekend_tasks[str(is_weekend)].keys():
+                            weekend_tasks[str(is_weekend)][day] = [
+                                1, info['data']['sum']]
                         else:
-                            weekend_tasks[str(is_weekend)][task] = [day]
+                            weekend_tasks[str(is_weekend)][day] = [weekend_tasks[str(
+                                is_weekend)][day][0] + 1, weekend_tasks[str(
+                                    is_weekend)][day][1] + info['data']['sum']]
+
+        # unique_days = []
+        # for weekend_day, days in weekend_tasks.items():
+        #     weekend_tasks[weekend_day] = sorted(
+        #         days.items(), key=lambda no: no)
 
         print(weekend_tasks)
 
@@ -143,7 +149,8 @@ class Reposition:
                     portion_needed = {task: d/sum_of_dues * abs(info['data']['difference']) for task,
                                       d in info['data']['days_to_due'].items()}
                     # print(portion_needed)
-                    for task_id, quote in info['quots'].items():
+                    for task_id in list(info['quots']):
+                        quote = info["quots"][task_id]
                         if quote > portion_needed[task_id]:
                             info['quots'][task_id] = quote - \
                                 portion_needed[task_id]
