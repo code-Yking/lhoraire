@@ -1,5 +1,6 @@
 import pprint
 from helpers import getDatefromDelta, isWeekend
+import operator
 
 
 class Reposition:
@@ -89,28 +90,29 @@ class Reposition:
 
     def fix_weekends(self):
         work_difference = self.week_end_work - self.week_day_work
-        weekend_tasks = {"1": {}, "2": {}}
+        weekend_tasks = []
 
         for day, info in self.schedule.items():
             date = getDatefromDelta(day)
-
             is_weekend = isWeekend(date)
+
             if is_weekend:
+                no_tasks = 0
+                tasks = []
+                area = info['data']['sum']
                 # print(day, date)
                 for task, day_range in self.task_range.items():
-                    if int(day) in range(int(day_range[0]), int(day_range[1])+1):
-                        if day not in weekend_tasks[str(is_weekend)].keys():
-                            weekend_tasks[str(is_weekend)][day] = [
-                                1, info['data']['sum']]
-                        else:
-                            weekend_tasks[str(is_weekend)][day] = [weekend_tasks[str(
-                                is_weekend)][day][0] + 1, weekend_tasks[str(
-                                    is_weekend)][day][1] + info['data']['sum']]
 
-        # unique_days = []
-        # for weekend_day, days in weekend_tasks.items():
-        #     weekend_tasks[weekend_day] = sorted(
-        #         days.items(), key=lambda no: no)
+                    # see if it is a weekend
+                    if int(day) in range(int(day_range[0]), int(day_range[1])+1):
+                        no_tasks = no_tasks + 1
+                        tasks.append(task)
+                weekend_tasks.append([no_tasks, tasks, is_weekend, day, area])
+
+        weekend_tasks.sort(key=operator.itemgetter(0, 4, 2))
+
+        # for weekend in weekend_tasks:
+        #     difference =
 
         print(weekend_tasks)
 
@@ -163,6 +165,8 @@ class Reposition:
 
                             info['data']['difference'] = info['data']['difference'] + \
                                 portion_needed[task_id]
+                            info['data']['sum'] = info['data']['sum'] - \
+                                portion_needed[task_id]
 
                         elif quote == portion_needed[task_id]:
 
@@ -176,6 +180,8 @@ class Reposition:
                             info['data']['days_to_due'].pop(task_id)
                             info['data']['difference'] = info['data']['difference'] + \
                                 portion_needed[task_id]
+                            info['data']['sum'] = info['data']['sum'] - \
+                                portion_needed[task_id]
 
                         elif quote < portion_needed[task_id]:
 
@@ -187,9 +193,10 @@ class Reposition:
                             info['data']['difference'] = info['data']['difference'] + quote
                             info['quots'].pop(task_id)
                             info['data']['days_to_due'].pop(task_id)
+                            info['data']['sum'] = info['data']['sum'] - quote
                     i = i+1
 
-        # pprint.pprint(self.schedule)
+        pprint.pprint(self.schedule)
         return to_reschedule
         # print('to_reschedule: ', to_reschedule)
 
