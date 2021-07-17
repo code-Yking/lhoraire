@@ -190,7 +190,7 @@ class Reposition:
     # cream off from week days, before or after according to gradient
     # not a problem if no of days get reduced as this is max days needed.
 
-    def summarized_schedule(self):
+    def reschedulable_days(self):
         weekend_tasks, weekday_tasks = [], []
 
         for day, info in self.schedule.items():
@@ -218,7 +218,7 @@ class Reposition:
 
     def fix_weekends(self):
         work_difference = self.week_end_work - self.week_day_work
-        weekday_tasks, weekend_tasks = self.summarized_schedule()
+        weekday_tasks, weekend_tasks = self.reschedulable_days()
 
         # priority is given to sort the weekend days,
         # so that more data is added first to the ones with less pressure
