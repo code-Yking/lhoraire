@@ -9,7 +9,7 @@ class Reposition:
         self.week_day_work = week_day_work
         self.week_end_work = week_end_work
 
-        self.day_scale = []
+        self.day_scale = [[], [], [], []]
         self.to_reschedule = {}
         self.task_range = {}
         self.schedule = self.schedule_cumulation()
@@ -73,16 +73,16 @@ class Reposition:
             info['data']['difference'] = self.week_day_work - sum_of_area
             # info['data']['percent_of_work'] = percent_of_work
 
-            work_scale = sum_of_area/self.week_day_work
+            self.day_scale_append(day, sum_of_area, self.week_day_work)
 
-            if work_scale > 0.5 and work_scale < 0.75:
-                yellow_days.append(day)
-            elif work_scale >= 0.75 and work_scale < 0.9:
-                orange_days.append(day)
-            elif work_scale > 0.9:
-                red_days.append(day)
-
-        self.day_scale = [yellow_days, orange_days, red_days]
+    def day_scale_append(self, day, work_sum, total_hrs):
+        work_scale = work_sum/total_hrs
+        if work_scale > 0.5 and work_scale < 0.75:
+            self.day_scale[0].append(day)
+        elif work_scale >= 0.75 and work_scale < 0.9:
+            self.day_scale[1].append(day)
+        elif work_scale > 0.9:
+            self.day_scale[2].append(day)
 
     # PLAN:
     # cream off from week days, before or after according to gradient
@@ -135,14 +135,14 @@ class Reposition:
                 diff = self.schedule[day]['data']['difference'] + \
                     work_difference
 
-                print('init', diff)
-                print()
-                print(day_info)
-                print()
-                pprint.pprint(self.schedule[day])
-                print()
-                pprint.pprint(self.to_reschedule)
-                print()
+                # print('init', diff)
+                # print()
+                # print(day_info)
+                # print()
+                # pprint.pprint(self.schedule[day])
+                # print()
+                # pprint.pprint(self.to_reschedule)
+                # print()
                 # tasks (with the hours) that are present in to_reschedule dict and present in this weekend
                 # reschedulable_tasks = {
                 #     k: self.to_reschedule[k] for k in self.to_reschedule.keys() and tasks}
@@ -206,14 +206,14 @@ class Reposition:
                             self.schedule[day]['quots'][task] = portion_used
                             self.schedule[day]['data']['days_to_due'][task] = dues[index]
                     # print(diff)
-                    print('final', diff)
-                    print()
-                    print(day_info)
-                    print()
-                    pprint.pprint(self.schedule[day])
-                    print()
-                    pprint.pprint(self.to_reschedule)
-                    print()
+                    # print('final', diff)
+                    # print()
+                    # print(day_info)
+                    # print()
+                    # pprint.pprint(self.schedule[day])
+                    # print()
+                    # pprint.pprint(self.to_reschedule)
+                    # print()
 
         if work_difference < 0:
             # pprint.pprint(self.to_reschedule)
@@ -306,6 +306,8 @@ class Reposition:
                             info['data']['days_to_due'].pop(task_id)
                             info['data']['sum'] = info['data']['sum'] - quote
                     i = i+1
+                self.day_scale[2].remove(day)
+                self.day_scale[3].append(day)
 
         # pprint.pprint(self.schedule)
         # print('to_reschedule: ', to_reschedule)
