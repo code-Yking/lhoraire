@@ -1,5 +1,8 @@
+from datetime import datetime
+import math
+from model import TaskModel
 import pprint
-from helpers import getDatefromDelta, isWeekend
+from helpers import getDateDelta, getDatefromDelta, isWeekend
 import operator
 
 
@@ -51,7 +54,7 @@ class Reposition:
                         }
                     }
 
-            start_date = task_object.start_day
+            start_date = math.ceil(task_object.start_day)
             self.task_range[task_id] = (start_date, due_date)
         return schedule_cumulation
 
@@ -252,6 +255,22 @@ class Reposition:
         # print(weekday_days)
         pprint.pprint(self.schedule)
         pprint.pprint(self.to_reschedule)
+
+        if len(self.to_reschedule):
+            self.tail_tasks()
+
+    def tail_tasks(self):
+        task_cumulation = {}
+        for task, hours in self.to_reschedule.items():
+            id = float(task.strip('t')) + 0.001
+            d = self.task_range[task][0]
+            task = TaskModel(id, due=d, work=hours,
+                             week_day_work=6, days=0, today=getDateDelta(datetime.now()) + 1)
+            task_cumulation[(id, f'tail for {task}', d)] = task
+
+        # print(task_cumulation)
+        from filter import Filter
+        a = Filter(task_cumulation)
 
     # PLAN:
     # Find difference where -ve,
