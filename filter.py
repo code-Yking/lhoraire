@@ -2,6 +2,7 @@ import json
 from json.decoder import JSONDecodeError
 import math
 from model import TaskModel
+from reposition import Reposition
 
 
 class Filter:
@@ -66,10 +67,11 @@ class Filter:
                             w = oldtasks[n][0]
                             g = oldtasks[n][1]
                             da = oldtasks[n][3]
+                            n = n.strip('t')
                             task = TaskModel(id=n, due=d, work=w,
                                              week_day_work=6, days=0, gradient=g, today=da)
                             newtasks[(n, "", d)] = task
 
-        print(newtasks)
+        Reposition(newtasks, 6, 10)
 
 # Filter()
