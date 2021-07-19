@@ -25,55 +25,54 @@ class Filter:
 
                 task_range = dict(oldtask_range, **newtask_range)
                 # print(oldtask_range)
+                inverted_tasks = {}
+
+                for task_id, range in task_range.items():
+                    inverted_tasks[range] = inverted_tasks.get(
+                        range, []) + [task_id]
+
+                a = list(inverted_tasks.keys())
+                b = []
+
+                c = []
+
+                for begin, end in sorted(a):
+                    if b and b[-1][1] >= begin:
+                        # print(tuple(b[-1]), (begin, end))
+                        index = b.index(b[-1])
+
+                        c[index] = c[index] + inverted_tasks.get(
+                            (begin, end))
+
+                        b[-1][1] = max(b[-1][1], end)
+                    else:
+                        b.append([begin, end])
+                        c.append(inverted_tasks.get((begin, end)))
+
+                b = [(k, w) for k, w in a]
+
+                b = dict(zip(b, c))
+
+                save(newtasks)
+
+                for range, tasks in b.items():
+                    for t in tasks:
+                        if t in newtask_range.keys():
+                            # theres a new guy
+                            for n in tasks:
+                                if n not in newtask_range.keys():
+                                    d = oldtasks[n][2][1]+1
+                                    w = oldtasks[n][0]
+                                    g = oldtasks[n][1]
+                                    da = oldtasks[n][3]
+                                    n = n.strip('t')
+                                    task = TaskModel(id=n, due=d, work=w,
+                                                     week_day_work=6, days=0, gradient=g, today=da)
+                                    newtasks[(n, "", d)] = task
 
             except JSONDecodeError:
+                save(newtasks)
                 print(1)
-                return 1
-        # print(task_range)
-
-        inverted_tasks = {}
-
-        for task_id, range in task_range.items():
-            inverted_tasks[range] = inverted_tasks.get(range, []) + [task_id]
-
-        a = list(inverted_tasks.keys())
-        b = []
-
-        c = []
-
-        for begin, end in sorted(a):
-            if b and b[-1][1] >= begin:
-                # print(tuple(b[-1]), (begin, end))
-                index = b.index(b[-1])
-
-                c[index] = c[index] + inverted_tasks.get(
-                    (begin, end))
-
-                b[-1][1] = max(b[-1][1], end)
-            else:
-                b.append([begin, end])
-                c.append(inverted_tasks.get((begin, end)))
-
-        b = [(k, w) for k, w in a]
-
-        b = dict(zip(b, c))
-
-        save(newtasks)
-
-        for range, tasks in b.items():
-            for t in tasks:
-                if t in newtask_range.keys():
-                    # theres a new guy
-                    for n in tasks:
-                        if n not in newtask_range.keys():
-                            d = oldtasks[n][2][1]+1
-                            w = oldtasks[n][0]
-                            g = oldtasks[n][1]
-                            da = oldtasks[n][3]
-                            n = n.strip('t')
-                            task = TaskModel(id=n, due=d, work=w,
-                                             week_day_work=6, days=0, gradient=g, today=da)
-                            newtasks[(n, "", d)] = task
 
         Reposition(newtasks, 6, 10)
 
