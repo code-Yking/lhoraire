@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import math
 from model import TaskModel
 import pprint
@@ -55,7 +56,7 @@ class Reposition:
                     }
 
             start_date = math.ceil(task_object.start_day)
-            self.task_range[task_id] = (start_date, due_date)
+            self.task_range[task_id] = [start_date, due_date]
         return schedule_cumulation
 
     def process_data(self):
@@ -95,15 +96,24 @@ class Reposition:
         # print(day)
         self.day_scale = day_scale
 
-    def day_filling(self, tasks, work_difference):
+    def day_filling(self, tasks):
         tasks_list = tasks
+
         for i, day_info in enumerate(tasks_list):          # for each weekend
             # the day delta number
             day = day_info[3]
 
+            if day_info[2]:
+                work_difference = self.week_end_work - self.week_day_work
+                diff = self.week_end_work
+            else:
+                work_difference = 0
+                diff = self.week_day_work
+
             # extra amount of hours that can be filled
-            diff = self.schedule[day]['data']['difference'] + \
-                work_difference
+            if day in self.schedule:
+                diff = self.schedule[day]['data']['difference'] + \
+                    work_difference
 
             # print('init', diff)
             # print()
@@ -141,12 +151,12 @@ class Reposition:
                     # making sure the task needs to rescheduled
                     if task not in self.to_reschedule.keys():
                         continue
-
+                    days_to_due = dues[index]
                     # using `Proximity` Percentage to calculate the max available portion for that task
                     portion_available = (
-                        (1 / dues[index]) / sum_reciprocals) * _diff
+                        (1 / days_to_due) / sum_reciprocals) * _diff
 
-                    print('due: ', dues[index], 'portion: ', portion_available)
+                    # print('due: ', dues[index], 'portion: ', portion_available)
 
                     reschedulable_portion = self.to_reschedule[task]
 
@@ -171,27 +181,35 @@ class Reposition:
 
                         tasks_list[i][0] = tasks_list[i][0] - 1
                         tasks_list[i][1].remove(task)
-                        tasks_list[i][5].remove(dues[index])
+                        tasks_list[i][5].remove(days_to_due)
 
-                    self.schedule[day]['data']['sum'] = self.schedule[day]['data']['sum'] + portion_used
+                    if day not in self.schedule.keys():
+                        self.schedule[day] = {
+                            'data': {'days_to_due': {}}, 'quots': {}}
+
+                    self.schedule[day]['data']['sum'] = self.schedule[day]['data'].get(
+                        'sum', 0) + portion_used
                     self.schedule[day]['data']['difference'] = diff
+
                     if task in self.schedule[day]['quots'].keys():
                         self.schedule[day]['quots'][task] = self.schedule[day]['quots'][task] + portion_used
                     else:
                         self.schedule[day]['quots'][task] = portion_used
-                        self.schedule[day]['data']['days_to_due'][task] = dues[index]
+                        print(dues)
+                        self.schedule[day]['data']['days_to_due'][task] = days_to_due
 
                     self.day_scale_append(
                         day, self.schedule[day]['data']['sum'], self.week_end_work)
-                # print(diff)
-                # print('final', diff)
-                # print()
-                # print(day_info)
-                # print()
-                # pprint.pprint(self.schedule[day])
-                # print()
-                # pprint.pprint(self.to_reschedule)
-                # print()
+
+                print(diff)
+                print('final', diff)
+                print()
+                print(day_info)
+                print()
+                pprint.pprint(self.schedule[day])
+                print()
+                pprint.pprint(self.to_reschedule)
+                print()
 
     # PLAN:
     # cream off from week days, before or after according to gradient
@@ -224,6 +242,24 @@ class Reposition:
 
         return weekday_days, weekend_days
 
+    def precedence(self):
+        precede_days = []
+        precede_days_dict = {}
+
+        for task, hours in self.to_reschedule.items():
+            for n in range(self.task_range[task][0] - 5, self.task_range[task][0]+1):
+                precede_days_dict[n] = precede_days_dict.get(n, []) + [task]
+
+        for date, tasks in precede_days_dict.items():
+            precede_days.append([len(tasks), tasks, isWeekend(getDatefromDelta(date)), date, 0, [
+                                self.task_range[t][1] - date for t in tasks]])
+
+        for task in self.to_reschedule.keys():
+            self.task_range[task][0] = self.task_range[task][0] - 5
+
+        # print(precede_days)
+        return precede_days
+
     def fix_weekends(self):
         work_difference = self.week_end_work - self.week_day_work
         weekday_days, weekend_days = self.reschedulable_days()
@@ -240,8 +276,8 @@ class Reposition:
 
         # if more work can be done during weekends than weekdays
         if work_difference > 0:
-            self.day_filling(weekend_days, work_difference)
-            # self.day_filling(weekday_days, 0)
+            self.day_filling(weekend_days)
+            self.day_filling(weekday_days)
 
         if work_difference < 0:
 
@@ -253,13 +289,19 @@ class Reposition:
 
         # print('day scale', self.day_scale)
         # print(weekday_days)
+
+        while len(self.to_reschedule):
+            # self.tail_tasks()
+            extra_days = self.precedence()
+            extra_days.sort(key=operator.itemgetter(3), reverse=True)
+            print(extra_days)
+            self.day_filling(extra_days)
+
         pprint.pprint(self.schedule)
         pprint.pprint(self.to_reschedule)
 
-        if len(self.to_reschedule):
-            self.tail_tasks()
-
     def tail_tasks(self):
+        input()
         task_cumulation = {}
         for task, hours in self.to_reschedule.items():
             id = float(task.strip('t')) + 0.001
@@ -271,6 +313,16 @@ class Reposition:
         # print(task_cumulation)
         from filter import Filter
         a = Filter(task_cumulation)
+
+    def update_tasks(self, task, diff):
+        with open('tasks.json') as json_file:
+            data = json.load(json_file)
+
+        info = data[task]
+        info[0] = info[0] - diff
+
+        with open('tasks.json', 'w') as outfile:
+            json.dump(data, outfile)
 
     # PLAN:
     # Find difference where -ve,
