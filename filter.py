@@ -1,3 +1,4 @@
+from helpers import save
 import json
 from json.decoder import JSONDecodeError
 import math
@@ -13,7 +14,7 @@ class Filter:
 
         for name, model in newtasks.items():
             newtask_range[model.id] = (
-                math.ceil(model.start_day), model.due_date)
+                math.ceil(model.start_day), model.due_date-1)
 
         with open('tasks.json') as tasks_json:
             try:
@@ -56,6 +57,8 @@ class Filter:
         b = [(k, w) for k, w in a]
 
         b = dict(zip(b, c))
+
+        save(newtasks)
 
         for range, tasks in b.items():
             for t in tasks:

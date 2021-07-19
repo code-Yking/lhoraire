@@ -2,13 +2,17 @@ import scipy.integrate
 from scipy import optimize
 
 import math
+import json
 
 
 class TaskModel():
-    def __init__(self, today, due, work, week_day_work, week_end_work=0, days=0, gradient='+', id=0):
+    def __init__(self, id, today, due, work, week_day_work, week_end_work=0, days=0, gradient='+'):
+        self.id = f't{id}'
         self.due_date = due
         self.k = work
         self.h = week_day_work
+        self.gradient = gradient
+        self.today = today
 
         # if the task is big, more than 10 hours of work
         if self.k > 10:

@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+import json
+import math
 
 D0 = datetime(2000, 1, 1)   # this is the defualt reference point
 
@@ -27,3 +29,18 @@ def isWeekend(date):
         return 2
     else:
         return 0
+
+
+def save(newtasks):
+    to_save = {}
+    for name, model in newtasks.items():
+        to_save[model.id] = [model.k, model.gradient, [
+            math.ceil(model.start_day), model.due_date-1], model.today]
+
+    with open('tasks.json') as json_file:
+        data = json.load(json_file)
+
+    data.update(to_save)
+
+    with open('tasks.json', 'w') as outfile:
+        json.dump(data, outfile)
