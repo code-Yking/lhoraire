@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import json
+from json.decoder import JSONDecodeError
 import math
 
 D0 = datetime(2000, 1, 1)   # this is the defualt reference point
@@ -38,9 +39,11 @@ def save(newtasks):
             math.ceil(model.start_day), model.due_date-1], model.today]
 
     with open('tasks.json') as json_file:
-        data = json.load(json_file)
-
-    data.update(to_save)
+        try:
+            data = json.load(json_file)
+            to_save.update(data)
+        except JSONDecodeError:
+            pass
 
     with open('tasks.json', 'w') as outfile:
-        json.dump(data, outfile)
+        json.dump(to_save, outfile)
