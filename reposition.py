@@ -114,13 +114,15 @@ class Reposition:
             # reschedulable_tasks = {
             #     k: self.to_reschedule[k] for k in self.to_reschedule.keys() and tasks}
 
-            # tasks id array
+            # task ids array
             tasks = day_info[1]
 
             # loop to put in the rescheduled tasks
             while diff > 0.1 and sum({k: self.to_reschedule[k] for k in self.to_reschedule.keys() & tasks}.values()) > 0.1:
                 # days to due array
                 dues = day_info[5]
+
+                _diff = diff
 
                 # Calculating the reciprocal `Proximity` Percentage
                 # to decide how much hours (of the free) can be allocated to each reschedule task
@@ -138,8 +140,10 @@ class Reposition:
                         continue
 
                     # using `Proximity` Percentage to calculate the max available portion for that task
-                    portion_available = 1 / \
-                        dues[index] / sum_reciprocals * diff
+                    portion_available = (
+                        (1 / dues[index]) / sum_reciprocals) * _diff
+
+                    print('due: ', dues[index], 'portion: ', portion_available)
 
                     reschedulable_portion = self.to_reschedule[task]
 
@@ -191,57 +195,63 @@ class Reposition:
     # not a problem if no of days get reduced as this is max days needed.
 
     def reschedulable_days(self):
-        weekend_tasks, weekday_tasks = [], []
+        weekend_days, weekday_days = [], []
 
         for day, info in self.schedule.items():
             date = getDatefromDelta(day)
             is_weekend = isWeekend(date)
 
+            no_tasks = 0
+            tasks = []
+            task_dues = []
+            area = info['data']['sum']
+
+            for task, day_range in self.task_range.items():
+                # see if it is a weekend and the task needs to be reschedulable
+                if int(day) in range(int(day_range[0]), int(day_range[1])+1) and task in self.to_reschedule.keys():
+                    no_tasks = no_tasks + 1
+                    tasks.append(task)
+                    task_dues.append(int(day_range[1])-day+1)
+
             if is_weekend:
-                no_tasks = 0
-                tasks = []
-                task_dues = []
-                area = info['data']['sum']
-                # print(day, date)
-                for task, day_range in self.task_range.items():
-
-                    # see if it is a weekend and the task needs to be reschedulable
-                    if int(day) in range(int(day_range[0]), int(day_range[1])+1) and task in self.to_reschedule.keys():
-                        no_tasks = no_tasks + 1
-                        tasks.append(task)
-                        task_dues.append(int(day_range[1])-day+1)
-
-                weekend_tasks.append(
+                weekend_days.append(
                     [no_tasks, tasks, is_weekend, day, area, task_dues])
+            else:
+                weekday_days.append([no_tasks, tasks, 0, day, area, task_dues])
 
-        return weekday_tasks, weekend_tasks
+        return weekday_days, weekend_days
 
     def fix_weekends(self):
         work_difference = self.week_end_work - self.week_day_work
-        weekday_tasks, weekend_tasks = self.reschedulable_days()
+        weekday_days, weekend_days = self.reschedulable_days()
 
         # priority is given to sort the weekend days,
         # so that more data is added first to the ones with less pressure
         # Priority no 1: No of tasks done during that weekend day. Lesser would be above
         # Priority no 2: Total number of hours worked during the weekend day. Lesser would be above
         # Priority no 3: Saturday or Sunday. Saturday is favored over sunday
-        weekend_tasks.sort(key=operator.itemgetter(0, 4, 2))
+        weekend_days.sort(key=operator.itemgetter(0, 4, 2))
+        weekday_days.sort(key=operator.itemgetter(0, 4))
 
-        print('day scale', self.day_scale)
+        # print('day scale', self.day_scale)
 
         # if more work can be done during weekends than weekdays
         if work_difference > 0:
-            self.day_filling(weekend_tasks, work_difference)
+            self.day_filling(weekend_days, work_difference)
+            # self.day_filling(weekday_days, 0)
 
         if work_difference < 0:
 
-            for weekend in weekend_tasks:
+            for weekend in weekend_days:
                 self.schedule[weekend[3]]['data']['difference'] = self.schedule[weekend[3]
                                                                                 ]['data']['difference'] - abs(work_difference)
             self.to_reschedule = {k: self.basic_reschedule().get(
                 k, 0) + self.to_reschedule.get(k, 0) for k in set(self.to_reschedule)}
 
-        print('day scale', self.day_scale)
+        # print('day scale', self.day_scale)
+        # print(weekday_days)
+        pprint.pprint(self.schedule)
+        pprint.pprint(self.to_reschedule)
 
     # PLAN:
     # Find difference where -ve,
