@@ -64,8 +64,6 @@ class Reposition:
     def process_data(self):
         # schedule_cumulation = cumulation
 
-        yellow_days, orange_days, red_days = [], [], []
-
         for day, info in self.schedule.items():
             sum_of_area = 0
 
@@ -408,16 +406,3 @@ class Reposition:
         # pprint.pprint(self.schedule)
         # print('to_reschedule: ', to_reschedule)
         return to_reschedule
-
-        reschedule_table = {'G': {}, 'Y': {}, 'O': {}, 'R': {}}
-
-        for task_id, reschedulable in to_reschedule.items():
-            reschedule_table['G'][task_id] = reschedulable * 1/2
-            reschedule_table['Y'][task_id] = reschedulable * 1/3
-            reschedule_table['O'][task_id] = reschedulable * 1/6
-
-        print(reschedule_table)
-
-    def get_overlaps(self, schedule_cumulation):
-        for day, info in schedule_cumulation.items():
-            no_of_tasks = len(info['quots'].keys())
