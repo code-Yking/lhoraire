@@ -9,7 +9,7 @@ from reposition import Reposition
 class Filter:
     def __init__(self, newtasks):
         newtasks = newtasks
-
+        to_reschedule = {}
         newtask_range = {}
 
         for name, model in newtasks.items():
@@ -23,6 +23,11 @@ class Filter:
                 oldtask_range = {task_id: tuple(task_info[2])
                                  for task_id, task_info in oldtasks.items()}
 
+                to_reschedule = {task_id: task_info[4]
+                                 for task_id, task_info in oldtasks.items()}
+                # print(to_reschedule)
+                # print('hello')
+                # input()
                 task_range = dict(oldtask_range, **newtask_range)
                 # print(oldtask_range)
                 inverted_tasks = {}
@@ -61,6 +66,9 @@ class Filter:
                             # theres a new guy
                             for n in tasks:
                                 if n not in newtask_range.keys():
+                                    # print(tasks, to_reschedule)
+                                    if n in to_reschedule.keys():
+                                        to_reschedule.pop(n)
                                     d = oldtasks[n][2][1]+1
                                     w = oldtasks[n][0]
                                     g = oldtasks[n][1]
@@ -74,6 +82,6 @@ class Filter:
                 save(newtasks)
                 print(1)
 
-        Reposition(newtasks, (6, 10), (8, 14))
+        Reposition(newtasks, (6, 10), (8, 14), to_reschedule)
 
 # Filter()
