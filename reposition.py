@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+from json.decoder import JSONDecodeError
 import math
 from model import TaskModel
 import pprint
@@ -8,7 +9,7 @@ import operator
 
 
 class Reposition:
-    def __init__(self, tasks, normal_work, max_work):
+    def __init__(self, tasks, normal_work, max_work, to_reschedule={}):
         self.tasks = tasks
         self.week_day_work = normal_work[0]
         self.week_end_work = normal_work[1]
@@ -16,7 +17,7 @@ class Reposition:
         self.max_week_day_work = max_work[0]
         self.max_week_end_work = max_work[1]
 
-        self.to_reschedule = {}
+        self.to_reschedule = to_reschedule
         self.task_range = {}
         self.schedule = self.schedule_cumulation()
 
@@ -313,18 +314,44 @@ class Reposition:
             # print(extra_days)
             self.day_filling(extra_days)
 
-        pprint.pprint(self.schedule)
-        pprint.pprint(self.to_reschedule)
+        # pprint.pprint(self.schedule)
+        # pprint.pprint(self.to_reschedule)
+        self.finalise_schedule()
+        self.update_tasks()
+        self.update_schedule()
 
-    def update_tasks(self, task, diff):
+    def finalise_schedule(self):
+        for i, (dayDelta, info) in enumerate(self.schedule.items()):
+            self.schedule[getDatefromDelta(
+                dayDelta)] = self.schedule.pop(dayDelta)
+
+    def update_tasks(self):
         with open('tasks.json') as json_file:
             data = json.load(json_file)
 
-        info = data[task]
-        info[0] = info[0] - diff
+        for task, info in data.items():
+            if task in self.task_range.keys():
+                _info = info
+                _info[2] = self.task_range[task]
+                _info[3] = getDateDelta(datetime.now()) + 1
+                data[task] = _info
 
         with open('tasks.json', 'w') as outfile:
-            json.dump(data, outfile)
+            json.dump(data, outfile, indent=4, sort_keys=True)
+
+    def update_schedule(self):
+        with open('schedule.json') as schedule_json:
+            try:
+                schedule = json.load(schedule_json)
+            except JSONDecodeError:
+                schedule = {}
+
+        # pprint.pprint(schedule)
+        schedule.update(self.schedule)
+        # pprint.pprint(schedule)
+
+        with open('schedule.json', 'w') as outfile:
+            json.dump(schedule, outfile, indent=4)
 
     # PLAN:
     # Find difference where -ve,
