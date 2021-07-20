@@ -96,9 +96,10 @@ def new_id():
     with open('tasks.json') as tasks_json:
         try:
             tasks = json.load(tasks_json)
-            nos = sorted([id.strip('t') for id in tasks.keys()], reverse=True)
+            nos = sorted([int(id.strip('t'))
+                          for id in tasks.keys()], reverse=True)
             if float(nos[0]).is_integer():
-                # print(int(nos[0]) + 1)
+                # print(int(nos[0]) + 1, nos)
                 return int(nos[0]) + 1
             else:
                 # print(math.ceil(float(nos[0])))
