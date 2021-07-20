@@ -8,10 +8,13 @@ import operator
 
 
 class Reposition:
-    def __init__(self, tasks, week_day_work, week_end_work):
+    def __init__(self, tasks, normal_work, max_work):
         self.tasks = tasks
-        self.week_day_work = week_day_work
-        self.week_end_work = week_end_work
+        self.week_day_work = normal_work[0]
+        self.week_end_work = normal_work[1]
+
+        self.max_week_day_work = max_work[0]
+        self.max_week_end_work = max_work[1]
 
         self.day_scale = [[], [], [], []]
         self.to_reschedule = {}
@@ -293,7 +296,17 @@ class Reposition:
         while len(self.to_reschedule):
             # self.tail_tasks()
             extra_days = self.precedence()
+
             if not len(extra_days):
+
+                while len(self.to_reschedule):
+                    weekday_days, weekend_days = self.reschedulable_days()
+                    # print(weekday_days)
+                    weekend_days.sort(key=operator.itemgetter(3))
+                    weekday_days.sort(key=operator.itemgetter(3))
+                    self.day_filling(weekend_days, True)
+                    self.day_filling(weekday_days, True)
+
                 break
             extra_days.sort(key=operator.itemgetter(3), reverse=True)
             print(extra_days)
