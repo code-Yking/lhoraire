@@ -96,7 +96,7 @@ class Reposition:
         # print(day)
         self.day_scale = day_scale
 
-    def day_filling(self, tasks):
+    def day_filling(self, tasks, surface=False):
         tasks_list = tasks
 
         for i, day_info in enumerate(tasks_list):          # for each weekend
@@ -111,21 +111,14 @@ class Reposition:
                 diff = self.week_day_work
 
             # extra amount of hours that can be filled
-            if day in self.schedule:
+            if day in self.schedule and not surface:
                 diff = self.schedule[day]['data']['difference'] + \
                     work_difference
-
-            # print('init', diff)
-            # print()
-            # print(day_info)
-            # print()
-            # pprint.pprint(self.schedule[day])
-            # print()
-            # pprint.pprint(self.to_reschedule)
-            # print()
-            # tasks (with the hours) that are present in to_reschedule dict and present in this weekend
-            # reschedulable_tasks = {
-            #     k: self.to_reschedule[k] for k in self.to_reschedule.keys() and tasks}
+            elif day in self.schedule and surface:
+                if day_info[2]:
+                    diff = 1
+                else:
+                    diff = 0.5
 
             # task ids array
             tasks = day_info[1]
@@ -247,7 +240,14 @@ class Reposition:
         precede_days_dict = {}
 
         for task, hours in self.to_reschedule.items():
-            for n in range(self.task_range[task][0] - 5, self.task_range[task][0]+1):
+            if self.task_range[task][0] == getDateDelta(datetime.now()) + 1:
+                return []
+            elif self.task_range[task][0] - 5 >= getDateDelta(datetime.now()) + 1:
+                lower_date = self.task_range[task][0] - 5
+            else:
+                lower_date = getDateDelta(datetime.now()) + 1
+
+            for n in range(lower_date, self.task_range[task][0]+1):
                 precede_days_dict[n] = precede_days_dict.get(n, []) + [task]
 
         for date, tasks in precede_days_dict.items():
@@ -255,7 +255,7 @@ class Reposition:
                                 self.task_range[t][1] - date for t in tasks]])
 
         for task in self.to_reschedule.keys():
-            self.task_range[task][0] = self.task_range[task][0] - 5
+            self.task_range[task][0] = lower_date
 
         # print(precede_days)
         return precede_days
@@ -293,6 +293,8 @@ class Reposition:
         while len(self.to_reschedule):
             # self.tail_tasks()
             extra_days = self.precedence()
+            if not len(extra_days):
+                break
             extra_days.sort(key=operator.itemgetter(3), reverse=True)
             print(extra_days)
             self.day_filling(extra_days)
