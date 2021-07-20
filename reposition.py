@@ -333,7 +333,7 @@ class Reposition:
 
     def fix_difference(self):
         self.to_reschedule = self.basic_reschedule()
-        print(self.to_reschedule)
+        # print(self.to_reschedule)
         self.fix_weekends()
 
     def basic_reschedule(self):
