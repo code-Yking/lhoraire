@@ -74,6 +74,6 @@ class Filter:
                 save(newtasks)
                 print(1)
 
-        Reposition(newtasks, 6, 10)
+        Reposition(newtasks, (6, 10), (8, 14))
 
 # Filter()

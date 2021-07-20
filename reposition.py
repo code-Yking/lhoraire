@@ -102,7 +102,7 @@ class Reposition:
     def day_filling(self, tasks, surface=False):
         tasks_list = tasks
 
-        for i, day_info in enumerate(tasks_list):          # for each weekend
+        for i, day_info in enumerate(tasks_list):          # for each day
             # the day delta number
             day = day_info[3]
 
@@ -119,15 +119,17 @@ class Reposition:
                     work_difference
             elif day in self.schedule and surface:
                 if day_info[2]:
-                    diff = 1
+                    diff = 1 if self.schedule[day]['data']['sum'] + \
+                        1 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day]['data']['sum']
                 else:
-                    diff = 0.5
+                    diff = 0.5 if self.schedule[day]['data']['sum'] + \
+                        0.5 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day]['data']['sum']
 
             # task ids array
             tasks = day_info[1]
 
             # loop to put in the rescheduled tasks
-            while diff > 0.1 and sum({k: self.to_reschedule[k] for k in self.to_reschedule.keys() & tasks}.values()) > 0.1:
+            while diff > 0.01 and sum({k: self.to_reschedule[k] for k in self.to_reschedule.keys() & tasks}.values()) > 0.1:
                 # days to due array
                 dues = day_info[5]
 
@@ -197,15 +199,15 @@ class Reposition:
                     self.day_scale_append(
                         day, self.schedule[day]['data']['sum'], self.week_end_work)
 
-                print(diff)
-                print('final', diff)
-                print()
-                print(day_info)
-                print()
-                pprint.pprint(self.schedule[day])
-                print()
-                pprint.pprint(self.to_reschedule)
-                print()
+                # print(diff)
+                # print('final', diff)
+                # print()
+                # print(day_info)
+                # print()
+                # pprint.pprint(self.schedule[day])
+                # print()
+                # pprint.pprint(self.to_reschedule)
+                # print()
 
     # PLAN:
     # cream off from week days, before or after according to gradient
@@ -299,17 +301,24 @@ class Reposition:
 
             if not len(extra_days):
 
+                weekday_days, weekend_days = self.reschedulable_days()
+                weekend_days.sort(key=operator.itemgetter(3))
+                weekday_days.sort(key=operator.itemgetter(3))
+
                 while len(self.to_reschedule):
-                    weekday_days, weekend_days = self.reschedulable_days()
+                    _to_reschedule = dict(self.to_reschedule)
                     # print(weekday_days)
-                    weekend_days.sort(key=operator.itemgetter(3))
-                    weekday_days.sort(key=operator.itemgetter(3))
                     self.day_filling(weekend_days, True)
                     self.day_filling(weekday_days, True)
 
+                    if _to_reschedule == self.to_reschedule:
+                        # pprint.pprint(_to_reschedule)
+                        # pprint.pprint(self.to_reschedule)
+                        break
+
                 break
             extra_days.sort(key=operator.itemgetter(3), reverse=True)
-            print(extra_days)
+            # print(extra_days)
             self.day_filling(extra_days)
 
         pprint.pprint(self.schedule)
