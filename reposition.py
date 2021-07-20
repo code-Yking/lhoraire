@@ -300,13 +300,10 @@ class Reposition:
 
                 while len(self.to_reschedule):
                     _to_reschedule = dict(self.to_reschedule)
-                    # print(weekday_days)
                     self.day_filling(weekend_days, True)
                     self.day_filling(weekday_days, True)
 
                     if _to_reschedule == self.to_reschedule:
-                        # pprint.pprint(_to_reschedule)
-                        # pprint.pprint(self.to_reschedule)
                         break
 
                 break
@@ -314,8 +311,6 @@ class Reposition:
             # print(extra_days)
             self.day_filling(extra_days)
 
-        # pprint.pprint(self.schedule)
-        # pprint.pprint(self.to_reschedule)
         self.finalise_schedule()
         self.update_tasks()
         self.update_schedule()
