@@ -48,7 +48,7 @@ class TaskModel():
         elif days != 0 and self.due_date - today + days > 0:
             # TODO make sure this works
             self.c = (3*self.k/(days + today) - self.h)/2
-            self.start_day = self.due_date-(days + today)
+            self.start_day = self.due_date - (days + today)
 
         # TODO flip according to limitation
         if (gradient == '-' and self.k/(self.due_date - today) < self.h) or (gradient == '+' and self.k/(self.due_date - today) > self.h):
@@ -61,6 +61,7 @@ class TaskModel():
                 today else self.due_date - today
             self.c = self.k/self.n
             self.h = self.c
+            self.start_day = self.due_date-self.n
 
         # total area, for checking
         total_area = scipy.integrate.quad(
