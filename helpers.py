@@ -36,7 +36,7 @@ def save(newtasks):
     to_save = {}
     for name, model in newtasks.items():
         to_save[model.id] = [model.k, model.gradient, [
-            math.ceil(model.start_day), model.due_date-1], model.today]
+            math.ceil(model.start_day), model.due_date-1], model.today, 0]
 
     with open('tasks.json') as json_file:
         try:
