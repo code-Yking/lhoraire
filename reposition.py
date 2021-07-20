@@ -17,7 +17,7 @@ class Reposition:
         self.max_week_day_work = max_work[0]
         self.max_week_end_work = max_work[1]
 
-        self.to_reschedule = to_reschedule
+        self.to_reschedule = {}
         self.task_range = {}
         self.schedule = self.schedule_cumulation()
 
@@ -59,7 +59,7 @@ class Reposition:
                     }
 
             start_date = math.ceil(task_object.start_day)
-            self.task_range[task_id] = [start_date, due_date]
+            self.task_range[task_id] = [start_date, due_date - 1]
         return schedule_cumulation
 
     def process_data(self):
@@ -119,7 +119,7 @@ class Reposition:
                         1 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day]['data']['sum']
                 else:
                     diff = 0.5 if self.schedule[day]['data']['sum'] + \
-                        0.5 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day]['data']['sum']
+                        0.5 <= self.max_week_day_work else self.max_week_day_work - self.schedule[day]['data']['sum']
 
             # task ids array
             tasks = day_info[1]
@@ -189,7 +189,7 @@ class Reposition:
                         self.schedule[day]['quots'][task] = self.schedule[day]['quots'][task] + portion_used
                     else:
                         self.schedule[day]['quots'][task] = portion_used
-                        print(dues)
+                        # print(dues)
                         self.schedule[day]['data']['days_to_due'][task] = days_to_due
 
                 # print(diff)
@@ -321,9 +321,12 @@ class Reposition:
         self.update_schedule()
 
     def finalise_schedule(self):
-        for i, (dayDelta, info) in enumerate(self.schedule.items()):
-            self.schedule[getDatefromDelta(
-                dayDelta)] = self.schedule.pop(dayDelta)
+        _schedule = dict(self.schedule)
+        for dayDelta, info in _schedule.items():
+            day = getDatefromDelta(int(dayDelta))
+            self.schedule[day] = self.schedule.pop(dayDelta)
+            self.schedule[day]['data'].pop('difference')
+            self.schedule[day]['data'].pop('days_to_due')
 
     def update_tasks(self):
         with open('tasks.json') as json_file:
@@ -334,6 +337,7 @@ class Reposition:
                 _info = info
                 _info[2] = self.task_range[task]
                 _info[3] = getDateDelta(datetime.now()) + 1
+                _info[4] = self.to_reschedule.get(task, 0)
                 data[task] = _info
 
         with open('tasks.json', 'w') as outfile:
@@ -359,7 +363,7 @@ class Reposition:
     # use differences to find close days to relocate
 
     def fix_difference(self):
-        self.to_reschedule = self.basic_reschedule()
+        self.to_reschedule.update(self.basic_reschedule())
         # print(self.to_reschedule)
         self.fix_weekends()
 
