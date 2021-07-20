@@ -16,7 +16,6 @@ class Reposition:
         self.max_week_day_work = max_work[0]
         self.max_week_end_work = max_work[1]
 
-        self.day_scale = [[], [], [], []]
         self.to_reschedule = {}
         self.task_range = {}
         self.schedule = self.schedule_cumulation()
@@ -80,24 +79,22 @@ class Reposition:
             info['data']['difference'] = self.week_day_work - sum_of_area
             # info['data']['percent_of_work'] = percent_of_work
 
-            self.day_scale_append(day, sum_of_area, self.week_day_work)
+    # def day_scale_append(self, day, work_sum, total_hrs):
+    #     day_scale = [[_day for _day in group if _day != day]
+    #                  for group in self.day_scale]
 
-    def day_scale_append(self, day, work_sum, total_hrs):
-        day_scale = [[_day for _day in group if _day != day]
-                     for group in self.day_scale]
+    #     work_scale = work_sum/total_hrs
+    #     if work_scale > 0.5 and work_scale < 0.75:
+    #         day_scale[0].append(day)
+    #     elif work_scale >= 0.75 and work_scale < 0.9:
+    #         day_scale[1].append(day)
+    #     elif work_scale > 0.9 and work_scale < 1:
+    #         day_scale[2].append(day)
+    #     elif work_scale >= 1:
+    #         day_scale[3].append(day)
 
-        work_scale = work_sum/total_hrs
-        if work_scale > 0.5 and work_scale < 0.75:
-            day_scale[0].append(day)
-        elif work_scale >= 0.75 and work_scale < 0.9:
-            day_scale[1].append(day)
-        elif work_scale > 0.9 and work_scale < 1:
-            day_scale[2].append(day)
-        elif work_scale >= 1:
-            day_scale[3].append(day)
-
-        # print(day)
-        self.day_scale = day_scale
+    #     # print(day)
+    #     self.day_scale = day_scale
 
     def day_filling(self, tasks, surface=False):
         tasks_list = tasks
@@ -195,9 +192,6 @@ class Reposition:
                         self.schedule[day]['quots'][task] = portion_used
                         print(dues)
                         self.schedule[day]['data']['days_to_due'][task] = days_to_due
-
-                    self.day_scale_append(
-                        day, self.schedule[day]['data']['sum'], self.week_end_work)
 
                 # print(diff)
                 # print('final', diff)
@@ -324,20 +318,6 @@ class Reposition:
         pprint.pprint(self.schedule)
         pprint.pprint(self.to_reschedule)
 
-    def tail_tasks(self):
-        input()
-        task_cumulation = {}
-        for task, hours in self.to_reschedule.items():
-            id = float(task.strip('t')) + 0.001
-            d = self.task_range[task][0]
-            task = TaskModel(id, due=d, work=hours,
-                             week_day_work=6, days=0, today=getDateDelta(datetime.now()) + 1)
-            task_cumulation[(id, f'tail for {task}', d)] = task
-
-        # print(task_cumulation)
-        from filter import Filter
-        a = Filter(task_cumulation)
-
     def update_tasks(self, task, diff):
         with open('tasks.json') as json_file:
             data = json.load(json_file)
@@ -424,8 +404,6 @@ class Reposition:
                             info['data']['days_to_due'].pop(task_id)
                             info['data']['sum'] = info['data']['sum'] - quote
                     i = i+1
-                self.day_scale_append(
-                    day, info['data']['sum'], self.week_day_work)
 
         # pprint.pprint(self.schedule)
         # print('to_reschedule: ', to_reschedule)
