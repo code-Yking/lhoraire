@@ -254,6 +254,7 @@ class Reposition:
     def rescheduling(self):
 
         self.free_days()
+        self.update_schedule()
 
         work_difference = self.week_end_work - \
             self.week_day_work       # no of extra hours for weekends
@@ -328,7 +329,9 @@ class Reposition:
             dayDelta = getDateDelta(day)
             schedule[dayDelta] = schedule.pop(day)
 
-        self.schedule = schedule.update(self.schedule)
+        # print(schedule)
+        schedule.update(self.schedule)
+        self.schedule = schedule
 
     def finalise_schedule(self):
         _schedule = dict(self.schedule)
@@ -346,7 +349,7 @@ class Reposition:
             if task in self.task_range.keys():
                 _info = info
                 _info[2] = self.task_range[task]
-                _info[3] = getDateDelta(datetime.now()) + 1
+                # _info[3] = getDateDelta(datetime.now()) + 1
                 _info[4] = self.to_reschedule.get(task, 0)
                 data[task] = _info
 
