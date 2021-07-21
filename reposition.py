@@ -35,8 +35,6 @@ class Reposition:
             task_id = f't{task_info[0]}'
             due_date = task_object.due_date
 
-            # print('working on: ', task_id)
-
             for day in days:
 
                 date_delta = day[0]
@@ -59,20 +57,9 @@ class Reposition:
                         }
                     }
 
-                # if date == 7879:
-                    # pprint.pprint(schedule_cumulation[date])
-                    # print()
-
             start_date = math.floor(task_object.start_day)
 
-            if task_id == "t3":
-                print("t3 start: ", start_date)
-            #           'schedule_cum first coming down')
-
             self.task_range[task_id] = [start_date, due_date - 1]
-
-        print('initial')
-        pprint.pprint(schedule_cumulation[7879])
 
         return schedule_cumulation
 
@@ -91,8 +78,6 @@ class Reposition:
             info['data']['sum'] = sum_of_area
             info['data']['difference'] = self.week_day_work - sum_of_area
             # info['data']['percent_of_work'] = percent_of_work
-        # print('after process')
-        # pprint.pprint(self.task_range)
 
     # filling days with tasks according to their proximity to the deadline
     def day_filling(self, tasks, surface=False):
@@ -114,8 +99,6 @@ class Reposition:
             if day in self.schedule and not surface:
                 diff = self.schedule[day]['data']['difference'] + \
                     work_difference
-                if day == 7885:
-                    print(diff, day_info[1])
             elif day in self.schedule and surface:
                 if day_info[2]:
                     diff = 1 if self.schedule[day]['data']['sum'] + \
@@ -233,8 +216,6 @@ class Reposition:
 
         for task, hours in self.to_reschedule.items():
             if self.task_range[task][0] == getDateDelta(datetime.now()) + 1:
-                # print(self.task_range[task][0],
-                #       getDateDelta(datetime.now()) + 1)
                 continue
 
             elif self.task_range[task][0] - 5 >= getDateDelta(datetime.now()) + 1:
@@ -255,13 +236,9 @@ class Reposition:
     def free_days(self):
         for task, range in self.task_range.items():
             last_date = range[1]
-            # if task == 't2':
-            #     print('t2', last_date)
-            # print(self.schedule[last_date]['quots'])
 
             for t in dict(self.schedule[last_date]['quots']):
                 if t != task and last_date != self.task_range[t][1]:
-                    # print(t)
                     area_rm = self.schedule[last_date]['quots'][t]
                     self.schedule[last_date]['data']['sum'] = self.schedule[last_date]['data']['sum'] - area_rm
                     self.schedule[last_date]['data']['difference'] = self.schedule[last_date]['data']['difference'] + area_rm
@@ -271,20 +248,17 @@ class Reposition:
                     self.to_reschedule[t] = self.to_reschedule.get(
                         t, 0) + area_rm
 
-                    # print(t, self.task_range[t], task, last_date)
                     if last_date == self.task_range[t][0]:
                         self.task_range[t][0] = last_date + 1
                     # print(t, self.task_range[t])
 
     def rescheduling(self):
         self.free_days()
-        # print(self.task_range)
         self.update_schedule()
 
         work_difference = self.week_end_work - \
             self.week_day_work       # no of extra hours for weekends
 
-        print(self.task_range)
         # this will collect the days that can be rescheduled into
         weekday_days, weekend_days = self.reschedulable_days()
 
@@ -295,8 +269,6 @@ class Reposition:
         # Priority no 3: Saturday or Sunday. Saturday is favored over sunday
         weekend_days.sort(key=operator.itemgetter(0, 4, 2))
         weekday_days.sort(key=operator.itemgetter(0, 4))
-        print(weekend_days)
-        print(weekday_days)
 
         # if more work can be done during weekends than weekdays,
         # then excess tasks can be rescheduled into those days
@@ -318,7 +290,6 @@ class Reposition:
         while len(self.to_reschedule):
             # getting 5 days prior to the start date of the tasks
             extra_days = self.precedence()
-            print(extra_days)
             # if reached today, can't get more room from earlier days
             if not len(extra_days):
                 # get ALL week days and weekend days that have the tasks
@@ -395,7 +366,6 @@ class Reposition:
 
         # pprint.pprint(schedule)
         schedule.update(self.schedule)
-        # pprint.pprint(schedule)
 
         with open('schedule.json', 'w') as outfile:
             json.dump(schedule, outfile, indent=4)
