@@ -88,10 +88,10 @@ class TaskModel():
             self.model, start, end)[0]
 
         if not float(self.start_day).is_integer():
-            task_days.append(((math.ceil(self.start_day)),
+            task_days.append(((math.floor(self.start_day)),
                               area(self.start_day, math.ceil(self.start_day))))
 
-        for n in range(math.ceil(self.start_day), self.due_date):
-            task_days.append((n+1, area(n, n+1)))
+        for n in range(math.floor(self.start_day), self.due_date):
+            task_days.append((n, area(n, n+1)))
 
         return task_days
