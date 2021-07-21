@@ -213,21 +213,22 @@ class Reposition:
 
         for task, hours in self.to_reschedule.items():
             if self.task_range[task][0] == getDateDelta(datetime.now()) + 1:
-                return []
+                print(self.task_range[task][0],
+                      getDateDelta(datetime.now()) + 1)
+                continue
+
             elif self.task_range[task][0] - 5 >= getDateDelta(datetime.now()) + 1:
                 lower_date = self.task_range[task][0] - 5
             else:
                 lower_date = getDateDelta(datetime.now()) + 1
 
-            for n in range(lower_date, self.task_range[task][0]+1):
+            for n in range(lower_date, self.task_range[task][0]):
                 precede_days_dict[n] = precede_days_dict.get(n, []) + [task]
+            self.task_range[task][0] = lower_date
 
         for date, tasks in precede_days_dict.items():
             precede_days.append([len(tasks), tasks, isWeekend(getDatefromDelta(date)), date, 0, [
-                                self.task_range[t][1] - date for t in tasks]])
-
-        for task in self.to_reschedule.keys():
-            self.task_range[task][0] = lower_date
+                                self.task_range[t][1] + 1 - date for t in tasks]])
 
         return precede_days
 
@@ -287,7 +288,7 @@ class Reposition:
         while len(self.to_reschedule):
             # getting 5 days prior to the start date of the tasks
             extra_days = self.precedence()
-
+            print(extra_days)
             # if reached today, can't get more room from earlier days
             if not len(extra_days):
                 # get ALL week days and weekend days that have the tasks
