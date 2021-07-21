@@ -16,7 +16,7 @@ def getDateDelta(date):
 
 
 def getDatefromDelta(delta):
-    date = D0 + timedelta(days=delta)
+    date = D0 + timedelta(days=(delta + 1))
     return date.strftime("%Y-%m-%d")
 
 
