@@ -17,13 +17,28 @@ class Reposition:
         self.max_week_day_work = max_work[0]
         self.max_week_end_work = max_work[1]
 
-        self.to_reschedule = {}
+        self.to_reschedule = to_reschedule
         self.task_range = {}
+
         self.schedule = self.schedule_cumulation()
+        print(1)
+        pprint.pprint(self.schedule)
+        # pprint.pprint(to_reschedule)
 
         self.process_data()
+        # print(2)
+        # pprint.pprint(self.schedule)
+        # pprint.pprint(to_reschedule)
+
         self.to_reschedule.update(self.basic_reschedule())
+        # print(3)
+        # pprint.pprint(self.schedule)
+        # pprint.pprint(to_reschedule)
+
         self.rescheduling()
+        # print(4)
+        # pprint.pprint(self.schedule)
+        # pprint.pprint(to_reschedule)
 
     # getting the initial schedule from the tasks
     def schedule_cumulation(self):
@@ -31,6 +46,7 @@ class Reposition:
 
         for task_info, task_object in self.tasks.items():
             days = task_object.generate_list()
+            print(days)
 
             task_id = f't{task_info[0]}'
             due_date = task_object.due_date
@@ -57,8 +73,8 @@ class Reposition:
                         }
                     }
 
+            # setting the task ranges
             start_date = math.floor(task_object.start_day)
-
             self.task_range[task_id] = [start_date, due_date - 1]
 
         return schedule_cumulation
@@ -253,8 +269,11 @@ class Reposition:
                     # print(t, self.task_range[t])
 
     def rescheduling(self):
+        # pprint.pprint(self.to_reschedule)
         self.free_days()
+        # pprint.pprint(self.to_reschedule)
         self.update_schedule()
+        # pprint.pprint(self.to_reschedule)
 
         work_difference = self.week_end_work - \
             self.week_day_work       # no of extra hours for weekends
@@ -290,6 +309,8 @@ class Reposition:
         while len(self.to_reschedule):
             # getting 5 days prior to the start date of the tasks
             extra_days = self.precedence()
+            print('one to final')
+            pprint.pprint(self.to_reschedule)
             # if reached today, can't get more room from earlier days
             if not len(extra_days):
                 # get ALL week days and weekend days that have the tasks
@@ -305,6 +326,9 @@ class Reposition:
                     _to_reschedule = dict(self.to_reschedule)
                     self.day_filling(weekend_days, True)
                     self.day_filling(weekday_days, True)
+                    print('final')
+                    pprint.pprint(self.to_reschedule)
+                    pprint.pprint(self.schedule)
 
                     if _to_reschedule == self.to_reschedule:
                         break
@@ -315,6 +339,7 @@ class Reposition:
             self.day_filling(extra_days)
 
         self.finalise_schedule()
+        print(self.get_task_sums())
         self.output_tasks()
         self.output_schedule()
 
@@ -340,6 +365,13 @@ class Reposition:
             self.schedule[day] = self.schedule.pop(dayDelta)
             # self.schedule[day]['data'].pop('difference')
             # self.schedule[day]['data'].pop('days_to_due')
+
+    def get_task_sums(self):
+        total_areas = {}
+        for info in self.schedule.values():
+            for task, area in info['quots'].items():
+                total_areas[task] = total_areas.get(task, 0) + area
+        return total_areas
 
     def output_tasks(self):
         with open('tasks.json') as json_file:
@@ -386,7 +418,7 @@ class Reposition:
                 pass
             else:
                 i = 0               # to allow for small task hours which might not be able to provide
-                while i < 2:
+                while i < 5:
                     if info['data']['difference'] >= 0:
                         break
                     sum_of_dues = 0
@@ -401,6 +433,8 @@ class Reposition:
                         quote = info["quots"][task_id]
 
                         if quote > portion_needed[task_id]:
+                            print('>')
+
                             info['quots'][task_id] = quote - \
                                 portion_needed[task_id]
 
@@ -410,13 +444,15 @@ class Reposition:
                             else:
                                 to_reschedule[task_id] = portion_needed[task_id]
 
+                            print(portion_needed[task_id])
+
                             info['data']['difference'] = info['data']['difference'] + \
                                 portion_needed[task_id]
                             info['data']['sum'] = info['data']['sum'] - \
                                 portion_needed[task_id]
 
                         elif quote == portion_needed[task_id]:
-
+                            print('==')
                             if task_id in to_reschedule.keys():
                                 to_reschedule[task_id] = to_reschedule[task_id] + \
                                     portion_needed[task_id]
@@ -433,10 +469,10 @@ class Reposition:
                             if day == self.task_range[task_id][0]:
                                 self.task_range[task_id][0] = self.task_range[task_id][0] + 1
                             elif day == self.task_range[task_id][1]:
-                                self.task_range[task_id][1] = self.task_range[task_id][1] + 1
+                                self.task_range[task_id][1] = self.task_range[task_id][1] - 1
 
                         elif quote < portion_needed[task_id]:
-
+                            print('<')
                             if task_id in to_reschedule.keys():
                                 to_reschedule[task_id] = to_reschedule[task_id] + quote
                             else:
@@ -450,10 +486,10 @@ class Reposition:
                             if day == self.task_range[task_id][0]:
                                 self.task_range[task_id][0] = self.task_range[task_id][0] + 1
                             elif day == self.task_range[task_id][1]:
-                                self.task_range[task_id][1] = self.task_range[task_id][1] + 1
+                                self.task_range[task_id][1] = self.task_range[task_id][1] - 1
                     i = i+1
 
         # pprint.pprint(self.schedule)
-        # print('to_reschedule: ', to_reschedule)
+        print('to_reschedule: ', to_reschedule)
         # print(self.task_range)
         return to_reschedule
