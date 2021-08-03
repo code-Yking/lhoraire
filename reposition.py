@@ -230,7 +230,12 @@ class Reposition:
         precede_days = []
         precede_days_dict = {}
 
+        # print(self.to_reschedule, self.task_range)
+
         for task, hours in self.to_reschedule.items():
+            if hours == 0:
+                continue
+
             if self.task_range[task][0] == getDateDelta(datetime.now()) + 1:
                 continue
 
@@ -363,8 +368,10 @@ class Reposition:
         for dayDelta, info in _schedule.items():
             day = getDatefromDelta(int(dayDelta))
             self.schedule[day] = self.schedule.pop(dayDelta)
-            # self.schedule[day]['data'].pop('difference')
-            # self.schedule[day]['data'].pop('days_to_due')
+
+        sorted(self.schedule, key=lambda x: datetime.strptime(x, '%Y-%m-%d'))
+        # self.schedule[day]['data'].pop('difference')
+        # self.schedule[day]['data'].pop('days_to_due')
 
     def get_task_sums(self):
         total_areas = {}
@@ -400,7 +407,7 @@ class Reposition:
         schedule.update(self.schedule)
 
         with open('schedule.json', 'w') as outfile:
-            json.dump(schedule, outfile, indent=4)
+            json.dump(schedule, outfile, indent=4, sort_keys=True)
 
     # PLAN:
     # Find difference where -ve,
