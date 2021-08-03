@@ -30,6 +30,7 @@ while True:
     print(all_areas)
     print('Kill the terminal to cancel')
 
-    df = pandas.DataFrame(all_areas, columns=tasks, index=index)
+    df = pandas.DataFrame(all_areas, columns=[
+                          task[5] for task in tasks_dict.values()], index=index)
     df.plot.bar(stacked=True)
     plt.show()
