@@ -88,7 +88,7 @@ class TaskModel():
             self.model, start, end)[0]
 
         task_days.append(((math.floor(self.start_day)),
-                          area(self.start_day, math.ceil(self.start_day))))
+                          area(self.start_day, math.ceil(self.start_day) if math.ceil(self.start_day) > self.start_day else self.start_day + 1)))
 
         for n in range(math.floor(self.start_day)+1, self.due_date):
             task_days.append((n, area(n, n+1)))
