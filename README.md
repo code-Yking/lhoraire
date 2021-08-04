@@ -1,4 +1,6 @@
 # lhoraire
-Time Management for Work and Study
 
-Needs scipy to run
+Time Management for Work and Study.
+
+Needs _scipy_ to run the program.
+Requires _mathplotlib_ and _pandas_ to run demo.py
