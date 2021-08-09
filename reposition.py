@@ -345,8 +345,8 @@ class Reposition:
 
         self.finalise_schedule()
         print('Sums: ', self.get_task_sums())
-        self.output_tasks()
-        self.output_schedule()
+        # self.output_tasks()
+        # self.output_schedule()
 
     def update_schedule(self):
         with open('schedule.json') as schedule_json:
