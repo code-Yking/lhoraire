@@ -1,9 +1,9 @@
-from helpers import save
+from .helpers import save
 import json
 from json.decoder import JSONDecodeError
 import math
-from model import TaskModel
-from reposition import Reposition
+from .model import TaskModel
+from .reposition import Reposition
 
 
 class Filter:
