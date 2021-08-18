@@ -81,7 +81,7 @@ def Filter(newtasks, oldtasks):
                     if n not in newtask_range.keys():
                         if n in to_reschedule.keys():
                             to_reschedule.pop(n)
-                        d = oldtasks[n][2][1]+1
+                        d = oldtasks[n][2][1]
                         w = oldtasks[n][0]
                         g = oldtasks[n][1]
                         da = oldtasks[n][3]
