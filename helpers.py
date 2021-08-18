@@ -1,15 +1,15 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as _d
 import json
 from json.decoder import JSONDecodeError
 import math
 
-D0 = datetime(2000, 1, 1)   # this is the defualt reference point
+D0 = _d(2000, 1, 1)   # this is the defualt reference point
 
 
 def getDateDelta(date):
 
-    if not isinstance(date, datetime):
-        date = datetime.fromisoformat(date)
+    if not isinstance(date, datetime) and not isinstance(date, _d):
+        date = _d.fromisoformat(date)
 
     delta = date - D0
     return delta.days - 1               # - 1 to fix the final date as the date before due

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date as d_
 import json
 from json.decoder import JSONDecodeError
 import math
@@ -9,8 +9,8 @@ import operator
 
 
 class Reposition:
-    def __init__(self, tasks, normal_work, max_work, to_reschedule={}):
-        self.tasks = tasks
+    def __init__(self, newtasks, oldschedule, oldtasks, normal_work, max_work, to_reschedule={}):
+        self.tasks = newtasks
         self.week_day_work = normal_work[0]
         self.week_end_work = normal_work[1]
 
@@ -20,7 +20,11 @@ class Reposition:
         self.to_reschedule = to_reschedule
         self.task_range = {}
 
+        self.task_obj = oldtasks
+        # print('hi: ', self.task_obj)
+
         self.schedule = self.schedule_cumulation()
+        self.set_old_schedule(oldschedule)
         # print(1)
         # pprint.pprint(self.schedule)
         # pprint.pprint(to_reschedule)
@@ -40,7 +44,30 @@ class Reposition:
         # pprint.pprint(self.schedule)
         # pprint.pprint(to_reschedule)
 
+    def set_old_schedule(self, oldschedule):
+        oldschedule = oldschedule
+        _o_schedule = dict(oldschedule)
+        for day, data in _o_schedule.items():
+            dayDelta = getDateDelta(day)
+            oldschedule[dayDelta] = oldschedule.pop(day)
+            sum_of_tasks = sum(data['quots'].values())
+            # difference = 0
+            if isWeekend(day):
+                difference = self.week_end_work - \
+                    sum_of_tasks if self.week_end_work - sum_of_tasks > 0 else 0
+            else:
+                difference = self.week_day_work - \
+                    sum_of_tasks if self.week_day_work - sum_of_tasks > 0 else 0
+            oldschedule[dayDelta]['data'] = {'difference': difference}
+        pprint.pprint(self.schedule)
+        pprint.pprint(oldschedule)
+        oldschedule.update(self.schedule)
+        self.schedule = oldschedule
+        pprint.pprint(self.schedule)
+        # self.schedule = schedule
+
     # getting the initial schedule from the tasks
+
     def schedule_cumulation(self):
         schedule_cumulation = {}
 
@@ -77,6 +104,7 @@ class Reposition:
             start_date = math.floor(task_object.start_day)
             self.task_range[task_id] = [start_date, due_date - 1]
 
+        # print('schedule_cu', schedule_cumulation)
         return schedule_cumulation
 
     def process_data(self):
@@ -236,13 +264,13 @@ class Reposition:
             if hours == 0:
                 continue
 
-            if self.task_range[task][0] == getDateDelta(datetime.now()) + 1:
+            if self.task_range[task][0] == getDateDelta(d_.today()) + 1:
                 continue
 
-            elif self.task_range[task][0] - 5 >= getDateDelta(datetime.now()) + 1:
+            elif self.task_range[task][0] - 5 >= getDateDelta(d_.today()) + 1:
                 lower_date = self.task_range[task][0] - 5
             else:
-                lower_date = getDateDelta(datetime.now()) + 1
+                lower_date = getDateDelta(d_.today()) + 1
 
             for n in range(lower_date, self.task_range[task][0]):
                 precede_days_dict[n] = precede_days_dict.get(n, []) + [task]
@@ -264,6 +292,7 @@ class Reposition:
                     self.schedule[last_date]['data']['sum'] = self.schedule[last_date]['data']['sum'] - area_rm
                     self.schedule[last_date]['data']['difference'] = self.schedule[last_date]['data']['difference'] + area_rm
                     self.schedule[last_date]['quots'].pop(t)
+                    pprint.pprint(self.schedule)
                     self.schedule[last_date]['data']['days_to_due'].pop(t)
 
                     self.to_reschedule[t] = self.to_reschedule.get(
@@ -274,11 +303,8 @@ class Reposition:
                     # print(t, self.task_range[t])
 
     def rescheduling(self):
-        # pprint.pprint(self.to_reschedule)
         self.free_days()
-        # pprint.pprint(self.to_reschedule)
-        self.update_schedule()
-        # pprint.pprint(self.to_reschedule)
+        # self.update_schedule()
 
         work_difference = self.week_end_work - \
             self.week_day_work       # no of extra hours for weekends
@@ -298,7 +324,6 @@ class Reposition:
         # then excess tasks can be rescheduled into those days
         if work_difference > 0:
             self.day_filling(weekend_days)
-            # print(self.to_reschedule)
 
         # else tasks have to be removed from them and added to to_reschedule dict
         elif work_difference < 0:
@@ -314,8 +339,6 @@ class Reposition:
         while len(self.to_reschedule):
             # getting 5 days prior to the start date of the tasks
             extra_days = self.precedence()
-            # print('one to final')
-            # pprint.pprint(self.to_reschedule)
             # if reached today, can't get more room from earlier days
             if not len(extra_days):
                 # get ALL week days and weekend days that have the tasks
@@ -347,6 +370,7 @@ class Reposition:
         print('Sums: ', self.get_task_sums())
         # self.output_tasks()
         # self.output_schedule()
+        # pprint.pprint(self.schedule)
 
     def update_schedule(self):
         with open('schedule.json') as schedule_json:
@@ -371,7 +395,7 @@ class Reposition:
 
         sorted(self.schedule, key=lambda x: datetime.strptime(x, '%Y-%m-%d'))
         # self.schedule[day]['data'].pop('difference')
-        # self.schedule[day]['data'].pop('days_to_due')
+        self.schedule[day]['data'].pop('days_to_due')
 
     def get_task_sums(self):
         total_areas = {}
@@ -380,21 +404,22 @@ class Reposition:
                 total_areas[task] = total_areas.get(task, 0) + area
         return total_areas
 
-    def output_tasks(self):
-        with open('tasks.json') as json_file:
-            data = json.load(json_file)
-
-        for task, info in data.items():
-            if task in self.task_range.keys():
-                _info = info
-                _info[2] = self.task_range[task]
-                # _info[3] = getDateDelta(datetime.now()) + 1
-                _info[4] = self.to_reschedule.get(task, 0)
-                # print('final', task, info[2], _info[2])
-                data[task] = _info
-
-        with open('tasks.json', 'w') as outfile:
-            json.dump(data, outfile, indent=4, sort_keys=True)
+    def worked_tasks(self):
+        # with open('tasks.json') as json_file:
+        #     data = json.load(json_file)
+        taskInfo = {}
+        # for task, info in self.task_obj.items():
+        for task, range in self.task_range.items():      # TODO why this
+            taskInfo[int(f"{task.strip('t')}")] = [
+                range[0], self.to_reschedule.get(task, 0)]
+            # _info = info
+            # _info[2] = self.task_range[task]
+            # # _info[3] = getDateDelta(datetime.now()) + 1
+            # _info[4] = self.to_reschedule.get(task, 0)
+            # # print('final', task, info[2], _info[2])
+            # taskInfo[task] = _info
+        return taskInfo
+        # self.task_obj.update(taskInfo)
 
     def output_schedule(self):
         with open('schedule.json') as schedule_json:
