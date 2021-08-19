@@ -24,7 +24,7 @@ class Reposition:
         # print('hi: ', self.task_obj)
 
         self.schedule = self.schedule_cumulation()
-        self.set_old_schedule(oldschedule)
+        self.oldschedule = oldschedule
         # print(1)
         # pprint.pprint(self.schedule)
         # pprint.pprint(to_reschedule)
@@ -44,8 +44,8 @@ class Reposition:
         # pprint.pprint(self.schedule)
         # pprint.pprint(to_reschedule)
 
-    def set_old_schedule(self, oldschedule):
-        oldschedule = oldschedule
+    def set_old_schedule(self):
+        oldschedule = self.oldschedule
         _o_schedule = dict(oldschedule)
         for day, data in _o_schedule.items():
             dayDelta = getDateDelta(day)
@@ -59,10 +59,13 @@ class Reposition:
                 difference = self.week_day_work - \
                     sum_of_tasks if self.week_day_work - sum_of_tasks > 0 else 0
             oldschedule[dayDelta]['data'] = {'difference': difference}
+        print('schedule')
         pprint.pprint(self.schedule)
+        print('oldschedule')
         pprint.pprint(oldschedule)
         oldschedule.update(self.schedule)
         self.schedule = oldschedule
+        print('updated schedule')
         pprint.pprint(self.schedule)
         # self.schedule = schedule
 
@@ -221,7 +224,11 @@ class Reposition:
                     else:
                         self.schedule[day]['quots'][task] = portion_used
                         # print(dues)
-                        self.schedule[day]['data']['days_to_due'][task] = days_to_due
+                        if 'days_to_due' in self.schedule[day]['data']:
+                            self.schedule[day]['data']['days_to_due'][task] = days_to_due
+                        else:
+                            self.schedule[day]['data']['days_to_due'] = {
+                                task: days_to_due}
 
     # PLAN:
     # cream off from week days, before or after according to gradient
@@ -335,6 +342,7 @@ class Reposition:
 
         self.day_filling(weekday_days)          # rescheduling into weekdays
 
+        self.set_old_schedule()
         # if there are tasks that still needs to be rescheduled
         while len(self.to_reschedule):
             # getting 5 days prior to the start date of the tasks
@@ -392,10 +400,10 @@ class Reposition:
         for dayDelta, info in _schedule.items():
             day = getDatefromDelta(int(dayDelta))
             self.schedule[day] = self.schedule.pop(dayDelta)
+            # self.schedule[day]['data'].pop('days_to_due')
 
         sorted(self.schedule, key=lambda x: datetime.strptime(x, '%Y-%m-%d'))
         # self.schedule[day]['data'].pop('difference')
-        self.schedule[day]['data'].pop('days_to_due')
 
     def get_task_sums(self):
         total_areas = {}
