@@ -81,14 +81,14 @@ def Filter(newtasks, oldtasks):
                     if n not in newtask_range.keys():
                         if n in to_reschedule.keys():
                             to_reschedule.pop(n)
-                        d = oldtasks[n][2][1]
-                        w = oldtasks[n][0]
-                        g = oldtasks[n][1]
-                        da = oldtasks[n][3]
-                        n = int(n.strip('t'))
-                        task = TaskModel(id=n, due=d, work=w,
-                                         week_day_work=6, days=0, gradient=g, today=da)
-                        newtasks[(n, "", d)] = task
+                        due_date = oldtasks[n][2][1]
+                        hours_work = oldtasks[n][0]
+                        gradient = oldtasks[n][1]
+                        modified_date = oldtasks[n][4] + 1
+                        id = int(n.strip('t'))
+                        task = TaskModel(id=id, due=due_date, work=hours_work,
+                                         week_day_work=6, days=0, gradient=gradient, today=modified_date)
+                        newtasks[(n, "", due_date)] = task
 
 #     except JSONDecodeError:
 #         # save(newtasks)
