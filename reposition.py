@@ -58,15 +58,16 @@ class Reposition:
             else:
                 difference = self.week_day_work - \
                     sum_of_tasks if self.week_day_work - sum_of_tasks > 0 else 0
-            oldschedule[dayDelta]['data'] = {'difference': difference}
-        print('schedule')
-        pprint.pprint(self.schedule)
-        print('oldschedule')
-        pprint.pprint(oldschedule)
+            oldschedule[dayDelta]['data'] = {
+                'difference': difference, 'sum': sum_of_tasks}
+        # print('schedule')
+        # pprint.pprint(self.schedule)
+        # print('oldschedule')
+        # pprint.pprint(oldschedule)
         oldschedule.update(self.schedule)
         self.schedule = oldschedule
-        print('updated schedule')
-        pprint.pprint(self.schedule)
+        # print('updated schedule')
+        # pprint.pprint(self.schedule)
         # self.schedule = schedule
 
     # getting the initial schedule from the tasks
@@ -135,6 +136,7 @@ class Reposition:
             # the day delta number
             day = day_info[3]
 
+            # setting difference according to weekend or not
             if day_info[2]:
                 work_difference = self.week_end_work - self.week_day_work
                 diff = self.week_end_work
@@ -158,7 +160,6 @@ class Reposition:
             tasks = day_info[1]
 
             # loop to put in the rescheduled tasks
-            # TODO increase mins
             while diff > 0.001 and sum({k: self.to_reschedule[k] for k in self.to_reschedule.keys() & tasks}.values()) > 0.001:
                 # days to due array
                 dues = day_info[5]
@@ -235,24 +236,35 @@ class Reposition:
     # not a problem if no of days get reduced as this is max days needed.
 
     def reschedulable_days(self):
+        # array of days that contain details of tasks that can be resceduled into those days
         weekend_days, weekday_days = [], []
 
+        # iterate through date and respective information of schedule tasks
         for day, info in self.schedule.items():
-            date = getDatefromDelta(day)
+            date = getDatefromDelta(day)        # get string text
+            # 0, 1, 2 whether weekday, sat, sun. For easy ordering
             is_weekend = isWeekend(date)
 
             no_tasks = 0
-            tasks = []
-            task_dues = []
-            area = info['data']['sum']
+            tasks = []          # tasks that can be resceduled into this day
+            task_dues = []      # days to due of these tasks
+            area = info['data']['sum']      # total time of these tasks
 
+            # iterate through all the tasks in the task_range property
             for task, day_range in self.task_range.items():
-                # see if it is a weekend and the task needs to be reschedulable
+                # see if this day is in the range of any tasks and if those task needs to be reschedulable
                 if int(day) in range(int(day_range[0]), int(day_range[1])+1) and task in self.to_reschedule.keys():
+                    # if task has value of 0 in to_reschedule
+                    # TODO make sure that to_reschedule becomes 0
+                    if self.to_reschedule[task] == 0:
+                        continue
+
+                    # add to the lists about tasks defined before
                     no_tasks = no_tasks + 1
                     tasks.append(task)
                     task_dues.append(int(day_range[1])-day+1)
 
+            # adding to the lists of days defined before
             if is_weekend:
                 weekend_days.append(
                     [no_tasks, tasks, is_weekend, day, area, task_dues])
@@ -263,32 +275,45 @@ class Reposition:
 
     def precedence(self):
         precede_days = []
+
+        # dict with days and the tasks that can be done on these days
         precede_days_dict = {}
 
         # print(self.to_reschedule, self.task_range)
 
+        # iterate through the tasks that have hours to be rescheduled
         for task, hours in self.to_reschedule.items():
+            # if no hours to be rescheduled, continue
             if hours == 0:
                 continue
 
+            # if start date of the task is tomorrow, continue
             if self.task_range[task][0] == getDateDelta(d_.today()) + 1:
                 continue
-
+            # if 5 less than start date of task is still more than tomorrow
             elif self.task_range[task][0] - 5 >= getDateDelta(d_.today()) + 1:
                 lower_date = self.task_range[task][0] - 5
+            # 5 less than start date of task is less than tomorrow, keep tommorow
             else:
                 lower_date = getDateDelta(d_.today()) + 1
 
+            # add the days from this lower date till the day before start date to precede_days_dict with tasks
             for n in range(lower_date, self.task_range[task][0]):
                 precede_days_dict[n] = precede_days_dict.get(n, []) + [task]
+
+            # update this task in the task_range property with lower date
             self.task_range[task][0] = lower_date
 
+        # add to precede_days according to day_filling format
         for date, tasks in precede_days_dict.items():
             precede_days.append([len(tasks), tasks, isWeekend(getDatefromDelta(date)), date, 0, [
                                 self.task_range[t][1] + 1 - date for t in tasks]])
 
+        print(precede_days)
+
         return precede_days
 
+    # free days that are before the due date of a task from other tasks
     def free_days(self):
         for task, range in self.task_range.items():
             last_date = range[1]
@@ -312,12 +337,15 @@ class Reposition:
     def rescheduling(self):
         self.free_days()
         # self.update_schedule()
+        print('taskrange before reschedulable_days()', self.task_range)
 
         work_difference = self.week_end_work - \
             self.week_day_work       # no of extra hours for weekends
 
         # this will collect the days that can be rescheduled into
         weekday_days, weekend_days = self.reschedulable_days()
+
+        print('taskrange after reschedulable_days()', self.task_range)
 
         # priority is given to sort the weekend days,
         # so that more data is added first to the ones with less pressure
@@ -343,6 +371,9 @@ class Reposition:
         self.day_filling(weekday_days)          # rescheduling into weekdays
 
         self.set_old_schedule()
+
+        print('to_reschedule before precedence', self.to_reschedule)
+
         # if there are tasks that still needs to be rescheduled
         while len(self.to_reschedule):
             # getting 5 days prior to the start date of the tasks
