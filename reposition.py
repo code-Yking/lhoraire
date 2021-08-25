@@ -151,6 +151,7 @@ class Reposition:
 
                 n += 1
                 surface = surface
+                excluded_area = 0
                 # while there are free space in the group and while this task requires rescheduling
                 while self.to_reschedule[task] > 0.001:
 
@@ -160,11 +161,13 @@ class Reposition:
 
                     # for days in the group
                     for i, day in enumerate(group):
+                        print(day[3])
                         priority_index = no_content - i
 
                         required_area = _to_reschedule[task] * \
                             priority_index * eq_gradient / denominator
 
+                        # TODO exchange this with helper method and remove item from list
                         isWeekend = day[2]
                         # figuring the free space for this day
                         # if day is defined in the schedule
@@ -174,6 +177,7 @@ class Reposition:
                                 diff = self.schedule[day[3]
                                                      ]['data']['difference']
                             else:
+
                                 # prioritizing weekends
                                 if isWeekend:
                                     diff = 1 if self.schedule[day[3]]['data']['sum'] + \
@@ -190,7 +194,8 @@ class Reposition:
                         # no space in this day
                         # TODO check possibility for this, make sure no filled days are sent
                         if diff == 0:
-                            break
+                            continue
+                        print(diff)
 
                         # calculating available area, using `Proximity` Percentage
                         days_to_dues = day[5]
@@ -206,6 +211,11 @@ class Reposition:
                             portion_used = available_area
                             # print('used', 2)
 
+                        if portion_used + self.schedule.get(day[3], {}).get('quots', {}).get(task, 0) < float(20/60):
+                            excluded_area += portion_used
+                            print(task, day[3])
+                            continue
+
                         self.to_reschedule[task] = self.to_reschedule.get(
                             task) - portion_used
                         # print(day[3], task, required_area)
@@ -215,7 +225,9 @@ class Reposition:
 
                         self.schedule[day[3]]['data']['sum'] = self.schedule[day[3]]['data'].get(
                             'sum', 0) + portion_used
-                        self.schedule[day[3]]['data']['difference'] = diff
+                        # print(day[3], diff, portion_used)
+                        self.schedule[day[3]
+                                      ]['data']['difference'] = diff - portion_used
 
                         if task in self.schedule[day[3]]['quots'].keys():
                             self.schedule[day[3]]['quots'][task] = self.schedule[day[3]
@@ -235,10 +247,13 @@ class Reposition:
 
                     # print('after', _to_reschedule, self.to_reschedule)
                     # if no free space in the group, then break
-                    group_diff = sum([self.schedule[day[3]]['data']
-                                      ['difference'] for day in group])
+                    group_diff = sum([self.schedule.get(day[3], {}).get('data', {}).get('difference', 0)
+                                      for day in group])
 
-                    if group_diff < 0.001:
+                    # print(group_diff, [getDatefromDelta(day[3])
+                    #    for day in group])
+
+                    if group_diff - excluded_area < 0.001:
                         break
 
                     surface = False
@@ -387,8 +402,7 @@ class Reposition:
         # schedule_ = self.schedule
         # to_resch_ = self.to_reschedule
         # print(self.to_reschedule)
-        day_filling_v2(list(weekend_days + weekday_days), self.schedule, self.to_reschedule,
-                       self.week_day_work, self.max_week_day_work, self.week_end_work, self.max_week_end_work)
+        self.day_filling(list(weekend_days + weekday_days))
         # print("OLD")
         # pprint.pprint(self.schedule)
         # pprint.pprint(self.to_reschedule)
@@ -445,9 +459,7 @@ class Reposition:
                     _to_reschedule = dict(self.to_reschedule)
                     # self.day_filling(weekend_days, True)
                     # self.day_filling(weekday_days, True)
-
-                    day_filling_v2(list(weekend_days + weekday_days), self.schedule, self.to_reschedule,
-                                   self.week_day_work, self.max_week_day_work, self.week_end_work, self.max_week_end_work, True)
+                    self.day_filling(list(weekend_days + weekday_days), True)
                     # print('final')
                     # pprint.pprint(self.to_reschedule)
                     # pprint.pprint(self.schedule)
@@ -458,8 +470,7 @@ class Reposition:
 
             # sorting the extra days preceeding the start date, filling the last first
             extra_days.sort(key=operator.itemgetter(3), reverse=True)
-            day_filling_v2(extra_days, self.schedule, self.to_reschedule,
-                           self.week_day_work, self.max_week_day_work, self.week_end_work, self.max_week_end_work, True)
+            self.day_filling(extra_days)
             # self.day_filling(extra_days)
 
         self.finalise_schedule()
