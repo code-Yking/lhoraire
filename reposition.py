@@ -2,7 +2,6 @@ from datetime import datetime, date as d_
 import json
 from json.decoder import JSONDecodeError
 import math
-# from model import TaskModel
 import pprint
 from .helpers import getDateDelta, getDatefromDelta, isWeekend
 import operator
@@ -11,11 +10,11 @@ import operator
 class Reposition:
     def __init__(self, newtasks, oldschedule, oldtasks, normal_work, max_work, to_reschedule={}):
         self.tasks = newtasks
-        self.week_day_work = normal_work[0]
-        self.week_end_work = normal_work[1]
+        self.week_day_work = float(normal_work[0])
+        self.week_end_work = float(normal_work[1])
 
-        self.max_week_day_work = max_work[0]
-        self.max_week_end_work = max_work[1]
+        self.max_week_day_work = float(max_work[0])
+        self.max_week_end_work = float(max_work[1])
 
         self.to_reschedule = to_reschedule
         self.task_range = {}
@@ -83,7 +82,6 @@ class Reposition:
             due_date = task_object.due_date
 
             for day in days:
-
                 date_delta = day[0]
                 date = day[0]
                 # date = getDatefromDelta(date_delta)
@@ -136,7 +134,7 @@ class Reposition:
             # the day delta number
             day = day_info[3]
 
-            # setting difference according to weekend or not
+            # setting difference according to weekend or not; for days not in the schedule (BLANK precedence)
             if day_info[2]:
                 work_difference = self.week_end_work - self.week_day_work
                 diff = self.week_end_work
@@ -146,8 +144,8 @@ class Reposition:
 
             # extra amount of hours that can be filled
             if day in self.schedule and not surface:
-                diff = self.schedule[day]['data']['difference'] + \
-                    work_difference
+                diff = self.schedule[day]['data']['difference']
+                # work_difference
             elif day in self.schedule and surface:
                 if day_info[2]:
                     diff = 1 if self.schedule[day]['data']['sum'] + \
@@ -180,6 +178,7 @@ class Reposition:
                     # making sure the task needs to rescheduled
                     if task not in self.to_reschedule.keys():
                         continue
+
                     days_to_due = dues[index]
                     # using `Proximity` Percentage to calculate the max available portion for that task
                     portion_available = (
@@ -236,13 +235,14 @@ class Reposition:
     # not a problem if no of days get reduced as this is max days needed.
 
     def reschedulable_days(self):
+        # TODO fix this to disinclude empty items
         # array of days that contain details of tasks that can be resceduled into those days
         weekend_days, weekday_days = [], []
 
         # iterate through date and respective information of schedule tasks
         for day, info in self.schedule.items():
             date = getDatefromDelta(day)        # get string text
-            # 0, 1, 2 whether weekday, sat, sun. For easy ordering
+            # 0, 1, 2 => weekday, sat, sun. For easy ordering
             is_weekend = isWeekend(date)
 
             no_tasks = 0
@@ -309,12 +309,12 @@ class Reposition:
             precede_days.append([len(tasks), tasks, isWeekend(getDatefromDelta(date)), date, 0, [
                                 self.task_range[t][1] + 1 - date for t in tasks]])
 
-        print(precede_days)
+        # print(precede_days)
 
         return precede_days
 
     # free days that are before the due date of a task from other tasks
-    def free_days(self):
+    def free_final_days(self):
         for task, range in self.task_range.items():
             last_date = range[1]
 
@@ -335,10 +335,11 @@ class Reposition:
                     # print(t, self.task_range[t])
 
     def rescheduling(self):
-        self.free_days()
+        self.free_final_days()
         # self.update_schedule()
         print('taskrange before reschedulable_days()', self.task_range)
 
+        # difference between weekend and weekday works
         work_difference = self.week_end_work - \
             self.week_day_work       # no of extra hours for weekends
 
@@ -355,24 +356,53 @@ class Reposition:
         weekend_days.sort(key=operator.itemgetter(0, 4, 2))
         weekday_days.sort(key=operator.itemgetter(0, 4))
 
+        for weekend in weekend_days:
+            self.schedule[weekend[3]]['data']['difference'] = self.schedule[weekend[3]
+                                                                            ]['data']['difference'] + abs(work_difference)
+        from .task_spread import day_filling_v2
+
+        # combined = list(weekend_days + weekday_days)
+        # schedule_ = self.schedule
+        # to_resch_ = self.to_reschedule
+        # print(self.to_reschedule)
+        day_filling_v2(list(weekend_days + weekday_days), self.schedule, self.to_reschedule,
+                       self.week_day_work, self.max_week_day_work, self.week_end_work, self.max_week_end_work)
+        # print("OLD")
+        # pprint.pprint(self.schedule)
+        # pprint.pprint(self.to_reschedule)
+
+        # print('before')
+        # pprint.pprint(self.schedule)
+
+        # if check == self.schedule:
+        #     # pprint.pprint(check)
+        #     print(True)
         # if more work can be done during weekends than weekdays,
         # then excess tasks can be rescheduled into those days
         if work_difference > 0:
-            self.day_filling(weekend_days)
+            # self.day_filling(weekend_days)
+            pass
 
         # else tasks have to be removed from them and added to to_reschedule dict
         elif work_difference < 0:
-            for weekend in weekend_days:
-                self.schedule[weekend[3]]['data']['difference'] = self.schedule[weekend[3]
-                                                                                ]['data']['difference'] - abs(work_difference)
             self.to_reschedule = {k: self.basic_reschedule().get(
                 k, 0) + self.to_reschedule.get(k, 0) for k in set(self.to_reschedule)}
+            # TODO whats this
 
-        self.day_filling(weekday_days)          # rescheduling into weekdays
+        # self.day_filling(weekday_days)          # rescheduling into weekdays
+
+        # print('afters')
+        # pprint.pprint(self.schedule)
+
+        for task, hours in dict(self.to_reschedule).items():
+            if hours < 0.001:
+                self.to_reschedule.pop(task)
+
+        pprint.pprint(self.to_reschedule)
 
         self.set_old_schedule()
 
-        print('to_reschedule before precedence', self.to_reschedule)
+        # print('to_reschedule before precedence', self.to_reschedule)
 
         # if there are tasks that still needs to be rescheduled
         while len(self.to_reschedule):
@@ -391,8 +421,11 @@ class Reposition:
                 # fill days untill it reaches maximum limit
                 while len(self.to_reschedule):
                     _to_reschedule = dict(self.to_reschedule)
-                    self.day_filling(weekend_days, True)
-                    self.day_filling(weekday_days, True)
+                    # self.day_filling(weekend_days, True)
+                    # self.day_filling(weekday_days, True)
+
+                    day_filling_v2(list(weekend_days + weekday_days), self.schedule, self.to_reschedule,
+                                   self.week_day_work, self.max_week_day_work, self.week_end_work, self.max_week_end_work, True)
                     # print('final')
                     # pprint.pprint(self.to_reschedule)
                     # pprint.pprint(self.schedule)
@@ -403,7 +436,9 @@ class Reposition:
 
             # sorting the extra days preceeding the start date, filling the last first
             extra_days.sort(key=operator.itemgetter(3), reverse=True)
-            self.day_filling(extra_days)
+            day_filling_v2(extra_days, self.schedule, self.to_reschedule,
+                           self.week_day_work, self.max_week_day_work, self.week_end_work, self.max_week_end_work, True)
+            # self.day_filling(extra_days)
 
         self.finalise_schedule()
         print('Sums: ', self.get_task_sums())
@@ -480,81 +515,107 @@ class Reposition:
 
     def basic_reschedule(self):
         # print(self.task_range)
+        # dict with the tasks and how much hours there needs to be rescheduled
         to_reschedule = {}
 
+        # iterating through the schedule
         for day, info in self.schedule.items():
+            # getting the difference property,
+            # +ve would mean free space and -ve would mean overflow
+            # difference is perfect at 0
             diff = info['data']['difference']
 
-            if diff >= 0:               # day is skipped if there is no difference
-                pass
-            else:
-                i = 0               # to allow for small task hours which might not be able to provide
-                while i < 5:
-                    if info['data']['difference'] >= 0:
-                        break
-                    sum_of_dues = 0
+            # day is skipped if there is no difference
+            if diff >= 0:
+                continue
 
-                    for task_id, days_to_due in info['data']['days_to_due'].items():
-                        sum_of_dues = sum_of_dues + days_to_due
+            # five attempts to remove excess task hours
+            i = 0               # to allow for small task hours which might not be able to provide
 
-                    portion_needed = {task: d/sum_of_dues * abs(info['data']['difference']) for task,
-                                      d in info['data']['days_to_due'].items()}
-                    # print(portion_needed)
-                    for task_id in list(info['quots']):
-                        quote = info["quots"][task_id]
+            while i < 5:
+                # loop is done if the difference is made perfect
+                if info['data']['difference'] >= 0:
+                    break
 
-                        if quote > portion_needed[task_id]:
+                # `Priority` Percentage is calculated using the ratio of the due dates
+                sum_of_dues = 0
 
-                            info['quots'][task_id] = quote - \
-                                portion_needed[task_id]
+                for task_id, days_to_due in info['data']['days_to_due'].items():
+                    sum_of_dues = sum_of_dues + days_to_due
 
-                            if task_id in to_reschedule.keys():
-                                to_reschedule[task_id] = to_reschedule[task_id] + \
-                                    portion_needed[task_id]
-                            else:
-                                to_reschedule[task_id] = portion_needed[task_id]
+                # this percentage is used to calculate how much of the difference is contributed by which task
+                # the program would `try` to remove these much amount from each task item that day
+                portion_needed = {task: d/sum_of_dues * abs(info['data']['difference']) for task,
+                                  d in info['data']['days_to_due'].items()}
 
-                            info['data']['difference'] = info['data']['difference'] + \
-                                portion_needed[task_id]
-                            info['data']['sum'] = info['data']['sum'] - \
-                                portion_needed[task_id]
+                # gets the tasks in this day,
+                # the list method is used to duplicate the quots obj as its size would be changed
+                for task_id in list(info['quots']):
+                    quote = info["quots"][task_id]      # quote of this task
 
-                        elif quote == portion_needed[task_id]:
-                            if task_id in to_reschedule.keys():
-                                to_reschedule[task_id] = to_reschedule[task_id] + \
-                                    portion_needed[task_id]
-                            else:
-                                to_reschedule[task_id] = portion_needed[task_id]
+                    # if there is enough hours to fullfill the requirement
+                    if quote > portion_needed[task_id]:
+                        # take out that much amount
+                        info['quots'][task_id] = quote - \
+                            portion_needed[task_id]
 
-                            info['quots'].pop(task_id)
-                            info['data']['days_to_due'].pop(task_id)
-                            info['data']['difference'] = info['data']['difference'] + \
-                                portion_needed[task_id]
-                            info['data']['sum'] = info['data']['sum'] - \
-                                portion_needed[task_id]
+                        # add to to_reschedule dict
+                        to_reschedule[task_id] = to_reschedule.get(task_id, 0) + \
+                            portion_needed[task_id]
 
-                            if day == self.task_range[task_id][0]:
-                                self.task_range[task_id][0] = self.task_range[task_id][0] + 1
-                            elif day == self.task_range[task_id][1]:
-                                self.task_range[task_id][1] = self.task_range[task_id][1] - 1
+                        # difference and sum properties are updated
+                        info['data']['difference'] = info['data']['difference'] + \
+                            portion_needed[task_id]
+                        info['data']['sum'] = info['data']['sum'] - \
+                            portion_needed[task_id]
 
-                        elif quote < portion_needed[task_id]:
-                            if task_id in to_reschedule.keys():
-                                to_reschedule[task_id] = to_reschedule[task_id] + quote
-                            else:
-                                to_reschedule[task_id] = quote
+                    # if the required amount is perfectly equal to whats available
+                    elif quote == portion_needed[task_id]:
 
-                            info['data']['difference'] = info['data']['difference'] + quote
-                            info['quots'].pop(task_id)
-                            info['data']['days_to_due'].pop(task_id)
-                            info['data']['sum'] = info['data']['sum'] - quote
+                        # add to to_reschedule dict
+                        to_reschedule[task_id] = to_reschedule.get(task_id, 0) + \
+                            portion_needed[task_id]
 
-                            if day == self.task_range[task_id][0]:
-                                self.task_range[task_id][0] = self.task_range[task_id][0] + 1
-                            elif day == self.task_range[task_id][1]:
-                                self.task_range[task_id][1] = self.task_range[task_id][1] - 1
-                    i = i+1
+                        # remove the task item from the day
+                        info['quots'].pop(task_id)
+                        info['data']['days_to_due'].pop(task_id)
 
-        # print('to_reschedule: ', to_reschedule)
-        # print(self.task_range)
+                        # update difference and sum properties
+                        info['data']['difference'] = info['data']['difference'] + \
+                            portion_needed[task_id]
+                        info['data']['sum'] = info['data']['sum'] - \
+                            portion_needed[task_id]
+
+                        # if the day happens to be the first day of a task
+                        if day == self.task_range[task_id][0]:
+                            self.task_range[task_id][0] = self.task_range[task_id][0] + 1
+                        # TODO whats this all about? also down
+                        elif day == self.task_range[task_id][1]:
+                            self.task_range[task_id][1] = self.task_range[task_id][1] - 1
+
+                    # if the available hours are less than what is requied
+                    elif quote < portion_needed[task_id]:
+                        # add the whole quote to_reschedule dict
+                        to_reschedule[task_id] = to_reschedule.get(task_id, 0) + \
+                            quote
+
+                        # remove the task item from the day
+                        info['quots'].pop(task_id)
+                        info['data']['days_to_due'].pop(task_id)
+
+                        # update the difference and sum properties
+                        info['data']['difference'] = info['data']['difference'] + quote
+                        info['data']['sum'] = info['data']['sum'] - quote
+
+                        # if the day happens to be the first day of a task
+                        if day == self.task_range[task_id][0]:
+                            self.task_range[task_id][0] = self.task_range[task_id][0] + 1
+                        elif day == self.task_range[task_id][1]:
+                            self.task_range[task_id][1] = self.task_range[task_id][1] - 1
+
+                # the difference neednt be made perfect
+                # because of the possibility of the requirement not fullfilling
+                i += 1      # increment of the loop variable
+                # the loop would happen 4 more times after which the residual is ignored
+
         return to_reschedule
