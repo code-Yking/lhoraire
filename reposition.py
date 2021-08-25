@@ -127,108 +127,130 @@ class Reposition:
 
     # filling days with tasks according to their proximity to the deadline
     def day_filling(self, tasks, surface=False):
-        tasks_list = tasks
+        day_filler_items = tasks
+        # print('hello')
+        # print(to_reschedule)
+        for task in self.to_reschedule.keys():
+            # list of days with this task
+            filtered = list(filter(lambda x: task in x[1], day_filler_items))
 
-        # for each day with tasks that can be rescheduled into
-        for i, day_info in enumerate(tasks_list):
-            # the day delta number
-            day = day_info[3]
+            # divided into groups of five. First five high priority is filled before others
+            segmented_filterd = [filtered[x:x+100]
+                                 for x in range(0, len(filtered), 100)]
+            # print(segmented_filterd)
 
-            # setting difference according to weekend or not; for days not in the schedule (BLANK precedence)
-            if day_info[2]:
-                work_difference = self.week_end_work - self.week_day_work
-                diff = self.week_end_work
-            else:
-                work_difference = 0
-                diff = self.week_day_work
+            n = 1
+            # for each group of 5 days in the segmented filtered list
+            for group in segmented_filterd:
 
-            # extra amount of hours that can be filled
-            if day in self.schedule and not surface:
-                diff = self.schedule[day]['data']['difference']
-                # work_difference
-            elif day in self.schedule and surface:
-                if day_info[2]:
-                    diff = 1 if self.schedule[day]['data']['sum'] + \
-                        1 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day]['data']['sum']
-                else:
-                    diff = 0.5 if self.schedule[day]['data']['sum'] + \
-                        0.5 <= self.max_week_day_work else self.max_week_day_work - self.schedule[day]['data']['sum']
+                # print(n)
+                no_content = len(group)
+                eq_gradient = 1/no_content
+                denominator = sum(
+                    [n*eq_gradient for n in range(1, no_content+1)])
 
-            # task ids array
-            tasks = day_info[1]
+                n += 1
+                surface = surface
+                # while there are free space in the group and while this task requires rescheduling
+                while self.to_reschedule[task] > 0.001:
 
-            # loop to put in the rescheduled tasks
-            while diff > 0.001 and sum({k: self.to_reschedule[k] for k in self.to_reschedule.keys() & tasks}.values()) > 0.001:
-                # days to due array
-                dues = day_info[5]
+                    # has to be in here as the following rounds would need update
+                    _to_reschedule = dict(self.to_reschedule)
+                    # print(_to_reschedule, to_reschedule)
 
-                _diff = diff
+                    # for days in the group
+                    for i, day in enumerate(group):
+                        priority_index = no_content - i
 
-                # Calculating the reciprocal `Proximity` Percentage
-                # to decide how much hours (of the free) can be allocated to each reschedule task
-                sum_reciprocals = 0
+                        required_area = _to_reschedule[task] * \
+                            priority_index * eq_gradient / denominator
 
-                for index, n in enumerate(dues):
-                    # making sure the task needs to rescheduled
-                    if tasks[index] not in self.to_reschedule.keys():
-                        continue
-                    sum_reciprocals = sum_reciprocals + 1/n
-
-                for index, task in enumerate(tasks):
-                    # making sure the task needs to rescheduled
-                    if task not in self.to_reschedule.keys():
-                        continue
-
-                    days_to_due = dues[index]
-                    # using `Proximity` Percentage to calculate the max available portion for that task
-                    portion_available = (
-                        (1 / days_to_due) / sum_reciprocals) * _diff
-
-                    # print('due: ', dues[index], 'portion: ', portion_available)
-
-                    reschedulable_portion = self.to_reschedule[task]
-
-                    portion_used = 0
-
-                    # more hours that are to be rescheduled than available in the weekend for that task
-                    if portion_available < reschedulable_portion:
-                        portion_used = portion_available
-                        # to_reschedule property updated
-                        self.to_reschedule[task] = reschedulable_portion - \
-                            portion_available
-                        diff = diff - portion_available
-
-                        # weekend_tasks[i][0] = weekend_tasks[i][0] - 1
-                        # weekend_tasks[i][1].remove(task)
-                        # weekend_tasks[i][5].remove(dues)
-
-                    elif portion_available >= reschedulable_portion:
-                        portion_used = reschedulable_portion
-                        diff = diff - reschedulable_portion
-                        self.to_reschedule.pop(task)
-
-                        tasks_list[i][0] = tasks_list[i][0] - 1
-                        tasks_list[i][1].remove(task)
-                        tasks_list[i][5].remove(days_to_due)
-
-                    if day not in self.schedule.keys():
-                        self.schedule[day] = {
-                            'data': {'days_to_due': {}}, 'quots': {}}
-
-                    self.schedule[day]['data']['sum'] = self.schedule[day]['data'].get(
-                        'sum', 0) + portion_used
-                    self.schedule[day]['data']['difference'] = diff
-
-                    if task in self.schedule[day]['quots'].keys():
-                        self.schedule[day]['quots'][task] = self.schedule[day]['quots'][task] + portion_used
-                    else:
-                        self.schedule[day]['quots'][task] = portion_used
-                        # print(dues)
-                        if 'days_to_due' in self.schedule[day]['data']:
-                            self.schedule[day]['data']['days_to_due'][task] = days_to_due
+                        isWeekend = day[2]
+                        # figuring the free space for this day
+                        # if day is defined in the schedule
+                        if day[3] in self.schedule:
+                            # if it should NOT contribute towards excess hours
+                            if not surface:
+                                diff = self.schedule[day[3]
+                                                     ]['data']['difference']
+                            else:
+                                # prioritizing weekends
+                                if isWeekend:
+                                    diff = 1 if self.schedule[day[3]]['data']['sum'] + \
+                                        1 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day]['data']['sum']
+                                else:
+                                    diff = 0.5 if self.schedule[day[3]]['data']['sum'] + \
+                                        0.5 <= self.max_week_day_work else self.max_week_day_work - self.schedule[day]['data']['sum']
                         else:
-                            self.schedule[day]['data']['days_to_due'] = {
-                                task: days_to_due}
+                            if isWeekend:
+                                diff = self.week_end_work
+                            else:
+                                diff = self.week_day_work
+
+                        # no space in this day
+                        # TODO check possibility for this, make sure no filled days are sent
+                        if diff == 0:
+                            break
+
+                        # calculating available area, using `Proximity` Percentage
+                        days_to_dues = day[5]
+                        due = days_to_dues[day[1].index(task)]
+
+                        available_area = 1/due / \
+                            sum([1/n for n in days_to_dues]) * diff
+
+                        if required_area <= available_area:
+                            portion_used = required_area
+
+                        elif required_area > available_area:
+                            portion_used = available_area
+                            # print('used', 2)
+
+                        self.to_reschedule[task] = self.to_reschedule.get(
+                            task) - portion_used
+                        # print(day[3], task, required_area)
+                        if day[3] not in self.schedule.keys():
+                            self.schedule[day[3]] = {
+                                'data': {'days_to_due': {}}, 'quots': {}}
+
+                        self.schedule[day[3]]['data']['sum'] = self.schedule[day[3]]['data'].get(
+                            'sum', 0) + portion_used
+                        self.schedule[day[3]]['data']['difference'] = diff
+
+                        if task in self.schedule[day[3]]['quots'].keys():
+                            self.schedule[day[3]]['quots'][task] = self.schedule[day[3]
+                                                                                 ]['quots'][task] + portion_used
+                        else:
+                            self.schedule[day[3]]['quots'][task] = portion_used
+                            # print(dues)
+                            if 'days_to_due' in self.schedule[day[3]]['data']:
+                                self.schedule[day[3]
+                                              ]['data']['days_to_due'][task] = due
+                            else:
+                                self.schedule[day[3]]['data']['days_to_due'] = {
+                                    task: due}
+
+                        if len(day[1]) == 0:
+                            group.remove(day)
+
+                    # print('after', _to_reschedule, self.to_reschedule)
+                    # if no free space in the group, then break
+                    group_diff = sum([self.schedule[day[3]]['data']
+                                      ['difference'] for day in group])
+
+                    if group_diff < 0.001:
+                        break
+
+                    surface = False
+
+                # does not need to proceed if this task no longer needs to be rescheduled
+                if self.to_reschedule[task] < 0.001:
+                    break
+
+                # pprint(schedule)
+        # print('NEW')
+        # pprint(schedule)
+        # pprint(self.to_reschedule)
 
     # PLAN:
     # cream off from week days, before or after according to gradient
