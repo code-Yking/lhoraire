@@ -161,7 +161,7 @@ class Reposition:
 
                     # for days in the group
                     for i, day in enumerate(group):
-                        print(day[3])
+                        # print(day[3])
                         priority_index = no_content - i
 
                         required_area = _to_reschedule[task] * \
@@ -181,10 +181,10 @@ class Reposition:
                                 # prioritizing weekends
                                 if isWeekend:
                                     diff = 1 if self.schedule[day[3]]['data']['sum'] + \
-                                        1 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day]['data']['sum']
+                                        1 <= self.max_week_end_work else self.max_week_end_work - self.schedule[day[3]]['data']['sum']
                                 else:
                                     diff = 0.5 if self.schedule[day[3]]['data']['sum'] + \
-                                        0.5 <= self.max_week_day_work else self.max_week_day_work - self.schedule[day]['data']['sum']
+                                        0.5 <= self.max_week_day_work else self.max_week_day_work - self.schedule[day[3]]['data']['sum']
                         else:
                             if isWeekend:
                                 diff = self.week_end_work
@@ -195,7 +195,7 @@ class Reposition:
                         # TODO check possibility for this, make sure no filled days are sent
                         if diff == 0:
                             continue
-                        print(diff)
+                        # print(diff)
 
                         # calculating available area, using `Proximity` Percentage
                         days_to_dues = day[5]
@@ -213,11 +213,11 @@ class Reposition:
 
                         if portion_used + self.schedule.get(day[3], {}).get('quots', {}).get(task, 0) < float(20/60):
                             excluded_area += portion_used
-                            print(task, day[3])
+                            # print(task, day[3])
                             continue
 
-                        self.to_reschedule[task] = self.to_reschedule.get(
-                            task) - portion_used
+                        self.to_reschedule[task] = round(self.to_reschedule.get(
+                            task) - portion_used, 5)
                         # print(day[3], task, required_area)
                         if day[3] not in self.schedule.keys():
                             self.schedule[day[3]] = {
@@ -445,33 +445,41 @@ class Reposition:
             # getting 5 days prior to the start date of the tasks
             extra_days = self.precedence()
             # if reached today, can't get more room from earlier days
-            if not len(extra_days):
-                # get ALL week days and weekend days that have the tasks
-                weekday_days, weekend_days = self.reschedulable_days()
-
-                # sort these days such that earlier comes first
-                # TODO see if there is a better option
-                weekend_days.sort(key=operator.itemgetter(3))
-                weekday_days.sort(key=operator.itemgetter(3))
-
+            if len(extra_days):
+                # sorting the extra days preceeding the start date, filling the last first
+                extra_days.sort(key=operator.itemgetter(3), reverse=True)
+                self.day_filling(extra_days)
+                # self.day_filling(extra_days)
                 # fill days untill it reaches maximum limit
-                while len(self.to_reschedule):
-                    _to_reschedule = dict(self.to_reschedule)
-                    # self.day_filling(weekend_days, True)
-                    # self.day_filling(weekday_days, True)
-                    self.day_filling(list(weekend_days + weekday_days), True)
-                    # print('final')
-                    # pprint.pprint(self.to_reschedule)
-                    # pprint.pprint(self.schedule)
+                # while len(self.to_reschedule):
+                #     # self.day_filling(weekend_days, True)
+                #     # self.day_filling(weekday_days, True)
+                #     self.day_filling(list(weekend_days + weekday_days), True)
+                #     # print('final')
+                #     # pprint.pprint(self.to_reschedule)
+                #     # pprint.pprint(self.schedule)
 
-                    if _to_reschedule == self.to_reschedule:
-                        break
+                # break
+
+            _to_reschedule = dict(self.to_reschedule)
+            # get ALL week days and weekend days that have the tasks
+            weekday_days, weekend_days = self.reschedulable_days()
+
+            # sort these days such that earlier comes first
+            # TODO see if there is a better option
+            weekend_days.sort(key=operator.itemgetter(3))
+            weekday_days.sort(key=operator.itemgetter(3))
+
+            self.day_filling(list(weekend_days + weekday_days), True)
+
+            if dict(_to_reschedule) == dict(self.to_reschedule):
+                print('in here')
                 break
 
-            # sorting the extra days preceeding the start date, filling the last first
-            extra_days.sort(key=operator.itemgetter(3), reverse=True)
-            self.day_filling(extra_days)
-            # self.day_filling(extra_days)
+            print(1)
+            pprint.pprint(_to_reschedule)
+            print(2)
+            pprint.pprint(self.to_reschedule)
 
         self.finalise_schedule()
         print('Sums: ', self.get_task_sums())
