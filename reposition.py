@@ -396,7 +396,6 @@ class Reposition:
         for weekend in weekend_days:
             self.schedule[weekend[3]]['data']['difference'] = self.schedule[weekend[3]
                                                                             ]['data']['difference'] + abs(work_difference)
-        from .task_spread import day_filling_v2
 
         # combined = list(weekend_days + weekday_days)
         # schedule_ = self.schedule
