@@ -253,25 +253,17 @@ class Reposition:
                             if diff <= 0.001 and surface:
                                 # prioritizing weekends
                                 if isWeekend:
-                                    # 1 free hour does not exceed user MAX limit
-                                    if self.schedule[day[3]]['data']['sum'] + 1 <= self.max_week_end_work:
-                                        diff = 1
-                                    else:
-                                        # final available difference if it exceeds, last limit of this day
-                                        diff = self.max_week_end_work - \
-                                            self.schedule[day[3]
-                                                          ]['data']['sum']
-                                        days_final = True
+                                    # final available difference if it exceeds, last limit of this day
+                                    diff = self.max_week_end_work - \
+                                        self.schedule[day[3]
+                                                      ]['data']['sum']
+                                    days_final = True
                                 else:
-                                    # 0.5 free hour does not exceed user MAX limit
-                                    if self.schedule[day[3]]['data']['sum'] + 0.5 <= self.max_week_day_work:
-                                        diff = 0.5
-                                    else:
-                                        # final available difference if it exceeds, last limit of this day
-                                        diff = self.max_week_day_work - \
-                                            self.schedule[day[3]
-                                                          ]['data']['sum']
-                                        days_final = True
+                                    # final available difference if it exceeds, last limit of this day
+                                    diff = self.max_week_day_work - \
+                                        self.schedule[day[3]
+                                                      ]['data']['sum']
+                                    days_final = True
 
                         # day is not in the schedule, should be a new precedence day, gets defaults
                         else:
@@ -294,7 +286,8 @@ class Reposition:
                             if days_final or not surface:
                                 # TODO do days_final check for unneccesary loop
                                 day_filler_items.remove(day)
-                                init_day_filler_items.remove(day)
+                                init_day_filler_items.remove(
+                                    list(filter(lambda x: x[3] == day[3], init_day_filler_items))[0])
                                 day_updated = True
                             # else:
                             #     day_filler_items[list_i][0] -= 1
@@ -479,15 +472,30 @@ class Reposition:
                             if day[0] == 1:
                                 print('DELETING DAYS')
                                 init_day_filler_items.remove(day)
+                                if day in day_filler_items:
+                                    day_filler_items.remove(day)
                             else:
                                 print('EDITTING GROUPED DAYS')
-                                print(task, day[1])
-                                item_i = init_day_filler_items.index(day)
-                                init_day_filler_items[item_i][0] -= 1
-                                index = init_day_filler_items[item_i][1].index(
+                                # print(task, day[1])
+                                in_item_i = init_day_filler_items.index(day)
+                                init_day_filler_items[in_item_i][0] -= 1
+                                index = init_day_filler_items[in_item_i][1].index(
                                     task)
-                                init_day_filler_items[item_i][1].pop(index)
-                                init_day_filler_items[item_i][5].pop(index)
+                                init_day_filler_items[in_item_i][1].pop(index)
+                                init_day_filler_items[in_item_i][5].pop(index)
+
+                    for day in day_filler_items:
+                        if task in day[1]:
+                            if day[0] == 1:
+                                # if day in day_filler_items:
+                                day_filler_items.remove(day)
+                            else:
+                                item_i = day_filler_items.index(day)
+                                day_filler_items[item_i][0] -= 1
+                                index = day_filler_items[item_i][1].index(
+                                    task)
+                                day_filler_items[item_i][1].pop(index)
+                                day_filler_items[item_i][5].pop(index)
 
             n += 1
             print('\033[94m', self.to_reschedule, "\033[0m")
