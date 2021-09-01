@@ -383,7 +383,9 @@ class Reposition:
                                 day_updated = True
 
                             if (day in init_day_filler_items) and (days_final or not surface):
-                                init_day_filler_items.remove(day)
+                                # init_day_filler_items.remove(day)
+                                init_day_filler_items.remove(
+                                    list(filter(lambda x: x[3] == day[3], init_day_filler_items))[0])
                                 day_updated = True
 
                         # print("segmented_filterd 4")
