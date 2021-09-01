@@ -700,7 +700,7 @@ class Reposition:
 
         pprint.pprint(self.to_reschedule)
 
-        # self.set_old_schedule()
+        self.set_old_schedule()
 
         # print('to_reschedule before precedence', self.to_reschedule)
         precedence_available = True
@@ -740,11 +740,12 @@ class Reposition:
             # pprint.pprint(self.to_reschedule)
 
         self.finalise_schedule()
+        self.finalise_to_reschedule()
         print('Sums: ', self.get_task_sums())
         # self.output_tasks()
         # self.output_schedule()
-        print('final schedule')
-        pprint.pprint(self.schedule)
+        # print('final schedule')
+        # pprint.pprint(self.schedule)
 
     def update_schedule(self):
         with open('schedule.json') as schedule_json:
@@ -770,6 +771,10 @@ class Reposition:
 
         sorted(self.schedule, key=lambda x: datetime.strptime(x, '%Y-%m-%d'))
         # self.schedule[day]['data'].pop('difference')
+
+    def finalise_to_reschedule(self):
+        for task, hours in dict(self.to_reschedule).items():
+            self.to_reschedule[int(task.strip('t'))] = self.to_reschedule.pop(task)
 
     def get_task_sums(self):
         total_areas = {}
