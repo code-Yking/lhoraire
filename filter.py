@@ -6,7 +6,7 @@ from .model import TaskModel
 from .reposition import Reposition
 
 
-def Filter(newtasks, oldtasks):
+def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
 
     newtasks = newtasks
     oldtasks = oldtasks
@@ -16,9 +16,12 @@ def Filter(newtasks, oldtasks):
 
     # produce the limits of the range of new tasks, according to the model
     # limits ie, first and last date that has this task as a tuple
-    for model in newtasks.values():
-        newtask_range[model.id] = (
-            math.floor(model.start_day), model.due_date - 1)
+    if not man_reschedule:
+        for model in newtasks.values():
+            newtask_range[model.id] = (
+                math.floor(model.start_day), model.due_date - 1)
+    else:
+        newtask_range = reschedule_range
 
 # with open('tasks.json') as tasks_json:          # accessing old recorded tasks
     # try:
@@ -28,6 +31,7 @@ def Filter(newtasks, oldtasks):
     oldtask_range = {task_id: tuple(task_info[2])
                      for task_id, task_info in oldtasks.items()}
 
+    # TODO remove dis
     to_reschedule = {task_id: task_info[4]
                      for task_id, task_info in oldtasks.items()}
 
@@ -81,6 +85,7 @@ def Filter(newtasks, oldtasks):
                     if n not in newtask_range.keys():
                         if n in to_reschedule.keys():
                             to_reschedule.pop(n)
+
                         due_date = oldtasks[n][2][1]
                         hours_work = oldtasks[n][0]
                         gradient = oldtasks[n][1]

@@ -11,7 +11,7 @@ RESCHEDULE_LIMIT = 0
 
 
 class Reposition:
-    def __init__(self, newtasks, oldschedule, oldtasks, normal_work, max_work, to_reschedule, localdate):
+    def __init__(self, newtasks, oldschedule, oldtasks, normal_work, max_work, extra_hours, localdate):
         self.tasks = newtasks
         self.week_day_work = float(normal_work[0])
         self.week_end_work = float(normal_work[1])
@@ -19,7 +19,7 @@ class Reposition:
         self.max_week_day_work = float(max_work[0])
         self.max_week_end_work = float(max_work[1])
 
-        self.to_reschedule = to_reschedule
+        self.extra_hours = extra_hours
         self.task_range = {}
         self.task_total = {}
 
@@ -42,12 +42,12 @@ class Reposition:
         pprint.pprint(self.schedule)
         # pprint.pprint(to_reschedule)
         print()
-        self.to_reschedule.update(self.basic_reschedule())
+        self.to_reschedule = self.basic_reschedule()
         print('Basic Rescheduled Schedule')
         pprint.pprint(self.schedule)
         print()
         print('Initial to_reschedule')
-        pprint.pprint(to_reschedule)
+        # pprint.pprint(to_reschedule)
         print()
         print('Initial Sum')
         pprint.pprint(self.get_task_sums())
@@ -256,13 +256,13 @@ class Reposition:
                                     # final available difference if it exceeds, last limit of this day
                                     diff = self.max_week_end_work - \
                                         self.schedule[day[3]
-                                                      ]['data']['sum']
+                                                      ]['data']['sum'] + float(self.extra_hours.get(day[3], 0))
                                     days_final = True
                                 else:
                                     # final available difference if it exceeds, last limit of this day
                                     diff = self.max_week_day_work - \
                                         self.schedule[day[3]
-                                                      ]['data']['sum']
+                                                      ]['data']['sum'] + float(self.extra_hours.get(day[3], 0))
                                     days_final = True
 
                         # day is not in the schedule, should be a new precedence day, gets defaults
@@ -774,7 +774,8 @@ class Reposition:
 
     def finalise_to_reschedule(self):
         for task, hours in dict(self.to_reschedule).items():
-            self.to_reschedule[int(task.strip('t'))] = self.to_reschedule.pop(task)
+            self.to_reschedule[int(task.strip('t'))
+                               ] = self.to_reschedule.pop(task)
 
     def get_task_sums(self):
         total_areas = {}
