@@ -16,12 +16,12 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
 
     # produce the limits of the range of new tasks, according to the model
     # limits ie, first and last date that has this task as a tuple
-    if not man_reschedule:
+    if newtasks:
         for model in newtasks.values():
             newtask_range[model.id] = (
                 math.floor(model.start_day), model.due_date - 1)
-    else:
-        newtask_range = reschedule_range
+    if man_reschedule:
+        newtask_range.update(reschedule_range)
 
 # with open('tasks.json') as tasks_json:          # accessing old recorded tasks
     # try:
