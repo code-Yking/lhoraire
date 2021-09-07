@@ -75,12 +75,15 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
     union_range_tasks = dict(zip(union_ranges, grouped_tasks))
 
     # save(newtasks)
+    used_ranges = []
 
     # adding old tasks under the union of the limits of the new tasks into the list that is considered for reposition
     for range, tasks in union_range_tasks.items():
         for t in tasks:
             # if the group contain a new task
             if t in newtask_range.keys():
+                if range not in used_ranges:
+                    used_ranges.append(range)
                 # add all the other tasks in that group to
                 for n in tasks:
                     if n not in newtask_range.keys():
@@ -99,12 +102,11 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
 #     except JSONDecodeError:
 #         # save(newtasks)
 #         print(1)
-    return newtasks, union_ranges
+    return newtasks, used_ranges
     # return Reposition(newtasks, (6, 10), (8, 14), to_reschedule)
 
 
 def set_old_schedule(oldschedule, day_ranges, week_day_work, week_end_work, max_week_day_work, max_week_end_work, extrahours):
-    _o_schedule = dict(oldschedule)
     # dayrange = []
     days = []
     print("DAY RANGES    ", day_ranges)
@@ -112,7 +114,8 @@ def set_old_schedule(oldschedule, day_ranges, week_day_work, week_end_work, max_
         for day in range(dayrange[0], dayrange[1]+1):
             days.append(day)
     print('DAYS   ', days)
-    for day, data in _o_schedule.items():
+
+    for day, data in dict(oldschedule).items():
         dayDelta = getDateDelta(day)
         if dayDelta not in days:
             oldschedule[dayDelta] = oldschedule.pop(day)
