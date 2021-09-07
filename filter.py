@@ -1,4 +1,5 @@
-from .helpers import save
+import pprint
+from .helpers import getDateDelta, isWeekend, save
 import json
 from json.decoder import JSONDecodeError
 import math
@@ -53,7 +54,7 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
     union_ranges = []
     grouped_tasks = []
     # each list of tasks inside grouped_tasks would belong within the limits present in union_ranges under same index
-
+    print('init union_ranges', unique_ranges)
     # getting the union of the limits from unique_ranges and getting the respective tasks into the above lists
     for begin, end in sorted(unique_ranges):
         if union_ranges and union_ranges[-1][1] >= begin:
@@ -66,10 +67,10 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
         else:
             union_ranges.append([begin, end])
             grouped_tasks.append(inverted_tasks.get((begin, end)))
-
+        print(union_ranges)
     # lists are converted to tuples so they are hashable
-    union_ranges = [(k, w) for k, w in unique_ranges]
-
+    union_ranges = [(k, w) for k, w in union_ranges]
+    print('union_ranges', union_ranges)
     # producing a dictionary from both the lists
     union_range_tasks = dict(zip(union_ranges, grouped_tasks))
 
@@ -98,7 +99,57 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
 #     except JSONDecodeError:
 #         # save(newtasks)
 #         print(1)
-    return newtasks
+    return newtasks, union_ranges
     # return Reposition(newtasks, (6, 10), (8, 14), to_reschedule)
 
-# Filter()
+
+def set_old_schedule(oldschedule, day_ranges, week_day_work, week_end_work, max_week_day_work, max_week_end_work, extrahours):
+    _o_schedule = dict(oldschedule)
+    # dayrange = []
+    days = []
+    print("DAY RANGES    ", day_ranges)
+    for dayrange in day_ranges:
+        for day in range(dayrange[0], dayrange[1]+1):
+            days.append(day)
+    print('DAYS   ', days)
+    for day, data in _o_schedule.items():
+        dayDelta = getDateDelta(day)
+        if dayDelta not in days:
+            oldschedule[dayDelta] = oldschedule.pop(day)
+        else:
+            oldschedule.pop(day)
+            continue
+
+        sum_of_tasks = sum(data['quots'].values())
+        # difference = 0
+        if isWeekend(day):
+            if week_end_work - sum_of_tasks > 0:
+                difference = week_end_work - \
+                    sum_of_tasks
+            else:
+                difference = max_week_end_work + \
+                    extrahours.get(day, 0) - sum_of_tasks
+        else:
+            if week_day_work - sum_of_tasks > 0:
+                difference = week_day_work - sum_of_tasks
+            else:
+                difference = max_week_day_work + \
+                    extrahours.get(day, 0) - sum_of_tasks
+
+        oldschedule[dayDelta]['data'] = {
+            'difference': difference, 'sum': sum_of_tasks}
+
+    print('\033[91m')
+    # pprint.pprint(self.schedule)
+    print('oldschedule')
+    pprint.pprint(oldschedule)
+
+    # oldschedule.update(self.schedule)
+    # self.schedule = oldschedule
+
+    # print('updated schedule; normal = old update normal')
+    # pprint.pprint(self.schedule)
+    print('\033[0m')
+
+    return oldschedule
+    # self.schedule = schedule
