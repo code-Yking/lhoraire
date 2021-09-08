@@ -7,7 +7,7 @@ from .model import TaskModel
 from .reposition import Reposition
 
 
-def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
+def Filter(newtasks, oldtasks, man_reschedule, reschedule_range, local_date, week_day_work):
 
     newtasks = newtasks
     oldtasks = oldtasks
@@ -87,16 +87,17 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
                 # add all the other tasks in that group to
                 for n in tasks:
                     if n not in newtask_range.keys():
-                        if n in to_reschedule.keys():
-                            to_reschedule.pop(n)
+                        # if n in to_reschedule.keys():
+                        #     to_reschedule.pop(n)
 
-                        due_date = oldtasks[n][2][1]
+                        due_date = oldtasks[n][2][1]  # + 1 ?????
                         hours_work = oldtasks[n][0]
                         gradient = oldtasks[n][1]
-                        modified_date = oldtasks[n][4] + 1
+                        modified_date = oldtasks[n][4]
                         id = int(n.strip('t'))
+                        print(n)
                         task = TaskModel(id=id, due=due_date, work=hours_work,
-                                         week_day_work=6, days=0, gradient=gradient, today=modified_date)
+                                         week_day_work=week_day_work, days=0, gradient=gradient, today=getDateDelta(local_date) + 1)
                         newtasks[(n, "", due_date)] = task
 
     return newtasks, used_ranges
