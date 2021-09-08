@@ -19,7 +19,7 @@ class Reposition:
         self.max_week_day_work = float(max_work[0])
         self.max_week_end_work = float(max_work[1])
 
-        self.extra_hours = extra_hours
+        self.extra_hours = dict(extra_hours)
         self.task_range = {}
         self.task_total = {}
 
@@ -75,17 +75,17 @@ class Reposition:
         #             sum_of_tasks if self.week_day_work - sum_of_tasks > 0 else 0
         #     oldschedule[dayDelta]['data'] = {
         #         'difference': difference, 'sum': sum_of_tasks}
-        # print('\033[91m')
-        # pprint.pprint(self.schedule)
-        # print('oldschedule')
-        # pprint.pprint(oldschedule)
+        print('\033[91m')
+        pprint.pprint(self.schedule)
+        print('oldschedule')
+        pprint.pprint(self.oldschedule)
 
         self.oldschedule.update(self.schedule)
         self.schedule = self.oldschedule
 
-        # print('updated schedule; normal = old update normal')
-        # pprint.pprint(self.schedule)
-        # print('\033[0m')
+        print('updated schedule; normal = old update normal')
+        pprint.pprint(self.schedule)
+        print('\033[0m')
         # self.schedule = schedule
 
     # getting the initial schedule from the tasks
@@ -353,16 +353,16 @@ class Reposition:
                                     'DAY REMOVED & SKIPPED', 'this task has less than 1 hour of to_reschedule')
 
                                 # day is removed from group as this would
-                                if group[-1] == day:
-                                    if day in group:
+                                if day in group:
+                                    if group[-1] == day:
                                         group.remove(day)
-                                    if not day_updated:
-                                        day_filler_items[list_i][0] -= 1
-                                        day_filler_items[list_i][1].pop(
-                                            task_index)
-                                        day_filler_items[list_i][5].pop(
-                                            task_index)
-                                        day_updated = True
+                                        if not day_updated:
+                                            day_filler_items[list_i][0] -= 1
+                                            day_filler_items[list_i][1].pop(
+                                                task_index)
+                                            day_filler_items[list_i][5].pop(
+                                                task_index)
+                                            day_updated = True
                                 # print(task, day[3])
                                 print('---- end of day ----')
                                 continue

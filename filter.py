@@ -99,15 +99,12 @@ def Filter(newtasks, oldtasks, man_reschedule=False, reschedule_range={}):
                                          week_day_work=6, days=0, gradient=gradient, today=modified_date)
                         newtasks[(n, "", due_date)] = task
 
-#     except JSONDecodeError:
-#         # save(newtasks)
-#         print(1)
     return newtasks, used_ranges
-    # return Reposition(newtasks, (6, 10), (8, 14), to_reschedule)
+
+# function to produce old schedules to be used for precedence in scheduling
 
 
 def set_old_schedule(oldschedule, day_ranges, week_day_work, week_end_work, max_week_day_work, max_week_end_work, extrahours):
-    # dayrange = []
     days = []
     print("DAY RANGES    ", day_ranges)
     for dayrange in day_ranges:
