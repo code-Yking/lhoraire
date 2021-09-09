@@ -29,7 +29,7 @@ def Filter(newtasks, oldtasks, man_reschedule, reschedule_range, local_date, wee
         # oldtasks = json.load(tasks_json)
 
         # produce the limits of the range of old tasks, according to the record
-    oldtask_range = {task_id: tuple(task_info[2])
+    oldtask_range = {task_id: tuple([task_info[2][0], task_info[2][1] - 1])
                      for task_id, task_info in oldtasks.items()}
 
     # TODO remove dis
@@ -90,7 +90,8 @@ def Filter(newtasks, oldtasks, man_reschedule, reschedule_range, local_date, wee
                         # if n in to_reschedule.keys():
                         #     to_reschedule.pop(n)
 
-                        due_date = oldtasks[n][2][1]  # + 1 ?????
+                        # makes a lot of sense
+                        due_date = oldtasks[n][2][1]
                         hours_work = oldtasks[n][0]
                         gradient = oldtasks[n][1]
                         modified_date = oldtasks[n][4]
