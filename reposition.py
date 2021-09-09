@@ -30,8 +30,8 @@ class Reposition:
 
         self.schedule = self.schedule_cumulation()
         self.oldschedule = oldschedule
-        # print(1)
-        # pprint.pprint(self.schedule)
+        print(1)
+        pprint.pprint(self.schedule)
         # pprint.pprint(to_reschedule)
 
         print(self.week_day_work, self.week_end_work)
@@ -297,12 +297,12 @@ class Reposition:
                                 # TODO do days_final check for unneccesary loop
 
                                 # remove day from continuing in this iteration
-                                day_filler_items.remove(day)
+                                # day_filler_items.remove(day)
 
                                 # and in the iterations to come
-                                init_day_filler_items.remove(
-                                    list(filter(lambda x: x[3] == day[3], init_day_filler_items))[0])
-                                day_updated = True
+                                # init_day_filler_items.remove(
+                                #     list(filter(lambda x: x[3] == day[3], init_day_filler_items))[0])
+                                # day_updated = True
 
                                 # else:
                                 #     day_filler_items[list_i][0] -= 1
@@ -310,7 +310,7 @@ class Reposition:
                                 #     day_filler_items[list_i][5].pop(task_index)
                                 #     day_updated = True
                                 # day is removed from this instantanious group as it can't hold any more hours with the limit
-                                group.remove(day)
+                                # group.remove(day)
                                 continue
                             # print(diff)
 
@@ -356,13 +356,16 @@ class Reposition:
                                 if day in group:
                                     if group[-1] == day:
                                         group.remove(day)
-                                        if not day_updated:
-                                            day_filler_items[list_i][0] -= 1
-                                            day_filler_items[list_i][1].pop(
-                                                task_index)
-                                            day_filler_items[list_i][5].pop(
-                                                task_index)
-                                            day_updated = True
+                                        if len(segmented_filterd) > group_index + 2:
+                                            segmented_filterd[group_index +
+                                                              1].insert(0, day)
+                                        # if not day_updated:
+                                        #     day_filler_items[list_i][0] -= 1
+                                        #     day_filler_items[list_i][1].pop(
+                                        #         task_index)
+                                        #     day_filler_items[list_i][5].pop(
+                                        #         task_index)
+                                        #     day_updated = True
                                 # print(task, day[3])
                                 print('---- end of day ----')
                                 continue
@@ -395,13 +398,21 @@ class Reposition:
                             if diff - portion_used <= 0.001:
                                 # if (day in day_filler_items and not surface and self.to_reschedule[task] > self.task_total[task]/3) \
                                 if (day in day_filler_items and (days_final or not surface)) and not day_updated:
+                                    print(
+                                        f'{day[3]} in day filler items, removed')
                                     day_filler_items.remove(day)
                                     day_updated = True
 
-                                if (day in init_day_filler_items) and (days_final or not surface):
+                                # if (days_final or not surface):
                                     # init_day_filler_items.remove(day)
+                                day_item = list(
+                                    filter(lambda x: x[3] == day[3], init_day_filler_items))
+
+                                if day_item:
                                     init_day_filler_items.remove(
                                         list(filter(lambda x: x[3] == day[3], init_day_filler_items))[0])
+                                    print(
+                                        f'{day[3]} in init day filler items, removed')
                                     day_updated = True
 
                             # print("segmented_filterd 4")
@@ -510,14 +521,6 @@ class Reposition:
             n += 1
             print('\033[94m', self.to_reschedule, "\033[0m")
 
-            # for task, hour in self.to_reschedule.items():
-            #     if hour < self.task_total[task]/3:
-            #         true_surface = True
-
-            # for day in day_filler_items:
-            #     if not day[0]:
-            #         day_filler_items.remove(day)
-
             if not len(self.to_reschedule) or not len(day_filler_items):
                 break
 
@@ -552,16 +555,22 @@ class Reposition:
             date = getDatefromDelta(day)        # get string text
             is_weekend = isWeekend(date)
 
-            if info['data']['difference'] <= 0.001:
-                if not surface:
+            if not surface:
+                if info['data']['difference'] <= 0.001:
                     continue
-                else:
-                    if is_weekend:
-                        if self.max_week_end_work + float(self.extra_hours.get(day, 0)) - area <= 0.001:
-                            continue
+            else:
+                if is_weekend:
+                    if self.max_week_end_work + float(self.extra_hours.get(day, 0)) - area <= 0.001:
+                        continue
                     else:
-                        if self.max_week_day_work + float(self.extra_hours.get(day, 0)) - area <= 0.001:
-                            continue
+                        info['data']['difference'] = self.max_week_end_work + \
+                            float(self.extra_hours.get(day, 0)) - area
+                else:
+                    if self.max_week_day_work + float(self.extra_hours.get(day, 0)) - area <= 0.001:
+                        continue
+                    else:
+                        info['data']['difference'] = self.max_week_day_work + \
+                            float(self.extra_hours.get(day, 0)) - area
 
             # 0, 1, 2 => weekday, sat, sun. For easy ordering
 
@@ -629,6 +638,10 @@ class Reposition:
 
         # add to precede_days according to day_filling format
         for date, tasks in precede_days_dict.items():
+
+            if self.schedule.get(date, {}).get('info', {}).get('difference', 1) <= 0.001:
+                continue
+
             precede_days.append([len(tasks), tasks, isWeekend(getDatefromDelta(date)), date, 0, [
                                 self.task_range[t][1] + 1 - date for t in tasks]])
 
