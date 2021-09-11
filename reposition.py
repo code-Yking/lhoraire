@@ -275,7 +275,7 @@ class Reposition:
                                             self.schedule[day[3]
                                                           ]['data']['sum'] + extra_hours
                                         days_final = True
-
+                                    print('surface diff', diff)
                             # day is not in the schedule, should be a new precedence day, gets defaults
                             # will be added to the schedule at the end
                             else:
@@ -290,7 +290,8 @@ class Reposition:
                                 print('DAY SKIPPED and REMOVED', getDatefromDelta(
                                     day[3]), 'This day has no free space, diff < 0.001 after figuring;')
                                 print('---- end of day ----')
-
+                                pprint.pprint(self.schedule.get(
+                                    day[3], {}))
                                 # not surfacing and big task to be rescheduled OR if it has reached its max, day is removed
 
                                 # if days_final or not surface:
@@ -397,14 +398,17 @@ class Reposition:
 
                             if diff - portion_used <= 0.001:
                                 # if (day in day_filler_items and not surface and self.to_reschedule[task] > self.task_total[task]/3) \
-                                if (day in day_filler_items and (days_final or not surface)) and not day_updated:
-                                    print(
-                                        f'{day[3]} in day filler items, removed')
-                                    day_filler_items.remove(day)
-                                    day_updated = True
+                                # if (day in day_filler_items) and (days_final or not surface) and not day_updated:
+                                print(
+                                    f'{day[3]} in day filler items, removed')
+                                day_filler_items.remove(day)
+                                day_updated = True
+                                # else:
+                                #     pprint.pprint(day_filler_items)
+                                #     print(day)
 
                                 # if (days_final or not surface):
-                                    # init_day_filler_items.remove(day)
+                                # init_day_filler_items.remove(day)
                                 day_item = list(
                                     filter(lambda x: x[3] == day[3], init_day_filler_items))
 
@@ -639,7 +643,7 @@ class Reposition:
         # add to precede_days according to day_filling format
         for date, tasks in precede_days_dict.items():
 
-            if self.schedule.get(date, {}).get('info', {}).get('difference', 1) <= 0.001:
+            if self.schedule.get(date, {}).get('data', {}).get('difference', 1) <= 0.001:
                 continue
 
             precede_days.append([len(tasks), tasks, isWeekend(getDatefromDelta(date)), date, 0, [
