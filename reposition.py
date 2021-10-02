@@ -42,6 +42,10 @@ class Reposition:
         pprint.pprint(self.schedule)
         # pprint.pprint(to_reschedule)
         print()
+
+        print('Task Range before BASIC reschedule')
+        pprint.pprint(self.task_range)
+
         self.to_reschedule = self.basic_reschedule()
         print('Basic Rescheduled Schedule')
         pprint.pprint(self.schedule)
@@ -52,6 +56,8 @@ class Reposition:
         print('Initial Sum')
         pprint.pprint(self.get_task_sums())
 
+        print('Task Range before reschedule')
+        pprint.pprint(self.task_range)
         self.rescheduling()
         # print(4)
         # pprint.pprint(self.schedule)
@@ -276,6 +282,7 @@ class Reposition:
                                                           ]['data']['sum'] + extra_hours
                                         days_final = True
                                     print('surface diff', diff)
+
                             # day is not in the schedule, should be a new precedence day, gets defaults
                             # will be added to the schedule at the end
                             else:
@@ -489,17 +496,27 @@ class Reposition:
                             break
 
                 print('n is ', n)
-                # TODO check this out
+
+                # if very less hours remain to be rescheduled.
                 if self.to_reschedule[task] <= 0.001:
+                    # removes day from to_reschedule
                     self.to_reschedule.pop(task)
+
+                    # removes day from day_filler_items and init_day_filler_items
+                    # this will prevent reiteration of this task
+
+                    # from init_day_filler_items
                     for day in init_day_filler_items:
                         if task in day[1]:
+                            # TODO check this out
+                            # if day filler item has only one day, removes the item
                             if day[0] == 1:
                                 print('DELETING DAYS')
                                 init_day_filler_items.remove(day)
-                                if day in day_filler_items:
-                                    day_filler_items.remove(day)
+                                # if day in day_filler_items:
+                                #     day_filler_items.remove(day)
                             else:
+                                # else edits the day filler items
                                 print('EDITTING GROUPED DAYS')
                                 # print(task, day[1])
                                 in_item_i = init_day_filler_items.index(day)
@@ -509,6 +526,7 @@ class Reposition:
                                 init_day_filler_items[in_item_i][1].pop(index)
                                 init_day_filler_items[in_item_i][5].pop(index)
 
+                    # from day_filler_items, similar to above
                     for day in day_filler_items:
                         if task in day[1]:
                             if day[0] == 1:
@@ -543,9 +561,7 @@ class Reposition:
         # pprint(schedule)
         # pprint(self.to_reschedule)
 
-    # PLAN:
-    # cream off from week days, before or after according to gradient
-    # not a problem if no of days get reduced as this is max days needed.
+    # produce day filler items for filling in days that are already in the schedule
 
     def reschedulable_days(self, surface=False):
         # TODO fix this to disinclude empty items
@@ -608,6 +624,7 @@ class Reposition:
 
         return weekday_days, weekend_days
 
+    # Produces day filler items for the purpose of precedence.
     def precedence(self):
         precede_days = []
 
@@ -759,7 +776,7 @@ class Reposition:
                 else:
                     precedence_available = False
 
-            _to_reschedule = dict(self.to_reschedule)
+            # _to_reschedule = dict(self.to_reschedule)
             # get ALL week days and weekend days that have the tasks
             weekday_days, weekend_days = self.reschedulable_days(True)
 
@@ -774,7 +791,7 @@ class Reposition:
                              True, precedence_available)
 
             if not precedence_available:
-                print('in here')
+                print('end of process')
                 break
 
             # print(1)
@@ -937,10 +954,10 @@ class Reposition:
 
                         # if the day happens to be the first day of a task
                         if day == self.task_range[task_id][0]:
-                            self.task_range[task_id][0] = self.task_range[task_id][0] + 1
+                            self.task_range[task_id][0] += 1
                         # TODO whats this all about? also down
-                        elif day == self.task_range[task_id][1]:
-                            self.task_range[task_id][1] = self.task_range[task_id][1] - 1
+                        if day == self.task_range[task_id][1]:
+                            self.task_range[task_id][1] -= 1
 
                     # if the available hours are less than what is requied
                     elif quote < portion_needed[task_id]:
@@ -953,14 +970,14 @@ class Reposition:
                         info['data']['days_to_due'].pop(task_id)
 
                         # update the difference and sum properties
-                        info['data']['difference'] = info['data']['difference'] + quote
-                        info['data']['sum'] = info['data']['sum'] - quote
+                        info['data']['difference'] += quote
+                        info['data']['sum'] -= quote
 
                         # if the day happens to be the first day of a task
                         if day == self.task_range[task_id][0]:
-                            self.task_range[task_id][0] = self.task_range[task_id][0] + 1
-                        elif day == self.task_range[task_id][1]:
-                            self.task_range[task_id][1] = self.task_range[task_id][1] - 1
+                            self.task_range[task_id][0] += 1
+                        if day == self.task_range[task_id][1]:
+                            self.task_range[task_id][1] -= 1
 
                 # the difference neednt be made perfect
                 # because of the possibility of the requirement not fullfilling
