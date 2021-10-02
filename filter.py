@@ -57,7 +57,8 @@ def Filter(newtasks, oldtasks, man_reschedule, reschedule_range, local_date, wee
     print('init union_ranges', unique_ranges)
     # getting the union of the limits from unique_ranges and getting the respective tasks into the above lists
     for begin, end in sorted(unique_ranges):
-        if union_ranges and union_ranges[-1][1] >= begin:
+        # -1 to add task-group adjacent
+        if union_ranges and union_ranges[-1][1] >= begin-1:
             index = union_ranges.index(union_ranges[-1])
 
             grouped_tasks[index] = grouped_tasks[index] + inverted_tasks.get(
@@ -105,17 +106,23 @@ def Filter(newtasks, oldtasks, man_reschedule, reschedule_range, local_date, wee
 
 # function to produce old schedules to be used for precedence in scheduling
 
+# produce old schedule according to the day ranges given
+
 
 def set_old_schedule(oldschedule, day_ranges, week_day_work, week_end_work, max_week_day_work, max_week_end_work, extrahours):
     days = []
     print("DAY RANGES    ", day_ranges)
+
+    # expand out the days that are present in each range
     for dayrange in day_ranges:
         for day in range(dayrange[0], dayrange[1]+1):
             days.append(day)
     print('DAYS   ', days)
 
+    # modify old schedule, remove unwanted days, change to dayDelta number, set difference and sum
     for day, data in dict(oldschedule).items():
         dayDelta = getDateDelta(day)
+
         if dayDelta not in days:
             oldschedule[dayDelta] = oldschedule.pop(day)
         else:
