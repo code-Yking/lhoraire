@@ -92,15 +92,18 @@ def Filter(newtasks, oldtasks, man_reschedule, reschedule_range, local_date, wee
                         #     to_reschedule.pop(n)
 
                         # makes a lot of sense
-                        due_date = oldtasks[n][2][1]
-                        hours_work = oldtasks[n][0]
-                        gradient = oldtasks[n][1]
-                        modified_date = oldtasks[n][4]
-                        id = int(n.strip('t'))
-                        print(n)
-                        task = TaskModel(id=id, due=due_date, work=hours_work,
-                                         week_day_work=week_day_work, days=0, gradient=gradient, today=getDateDelta(local_date) + 1)
-                        newtasks[(n, "", due_date)] = task
+                        # to prevent activation of old/retired tasks
+                        if oldtasks[n][2][1] - oldtasks[n][2][0] > 0:
+                            due_date = oldtasks[n][2][1]
+                            hours_work = oldtasks[n][0]
+                            gradient = oldtasks[n][1]
+                            # modified_date = oldtasks[n][4]
+                            # TODO just recheck why this is needed
+                            id = int(n.strip('t'))
+                            print(n)
+                            task = TaskModel(id=id, due=due_date, work=hours_work,
+                                             week_day_work=week_day_work, days=0, gradient=gradient, today=getDateDelta(local_date) + 1)
+                            newtasks[(n, "", due_date)] = task
 
     return newtasks, used_ranges
 
