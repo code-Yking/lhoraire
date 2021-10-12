@@ -27,6 +27,7 @@ class Reposition:
         # print('hi: ', self.task_obj)
 
         self.today = localdate
+        self.to_reschedule = {}
 
         self.schedule = self.schedule_cumulation()
         self.oldschedule = oldschedule
@@ -46,7 +47,9 @@ class Reposition:
         print('Task Range before BASIC reschedule')
         pprint.pprint(self.task_range)
 
-        self.to_reschedule = self.basic_reschedule()
+        self.to_reschedule = {
+            t: k + self.to_reschedule.get(t, 0) for t, k in self.basic_reschedule().items()}
+
         print('Basic Rescheduled Schedule')
         pprint.pprint(self.schedule)
         print()
@@ -112,21 +115,25 @@ class Reposition:
                 date = day[0]
                 # date = getDatefromDelta(date_delta)
                 task_area = day[1]
-
-                if date in schedule_cumulation:
-                    schedule_cumulation[date]['quots'][task_id] = task_area
-                    schedule_cumulation[date]['data']['days_to_due'][task_id] = due_date - date
-                else:
-                    schedule_cumulation[date] = {
-                        'quots': {
-                            task_id: task_area
-                        },
-                        'data': {
-                            'days_to_due': {
-                                task_id: due_date - date_delta
+                # adding to the schedule only if the task that day is greater than 20 mins
+                if task_area >= 20/60:
+                    if date in schedule_cumulation:
+                        schedule_cumulation[date]['quots'][task_id] = task_area
+                        schedule_cumulation[date]['data']['days_to_due'][task_id] = due_date - date
+                    else:
+                        schedule_cumulation[date] = {
+                            'quots': {
+                                task_id: task_area
+                            },
+                            'data': {
+                                'days_to_due': {
+                                    task_id: due_date - date_delta
+                                }
                             }
                         }
-                    }
+                else:
+                    self.to_reschedule[task_id] = self.to_reschedule.get(
+                        task_id, 0) + task_area
 
             # setting the task ranges
             start_date = math.floor(task_object.start_day)
@@ -920,7 +927,7 @@ class Reposition:
                     quote = info["quots"][task_id]      # quote of this task
 
                     # if there is enough hours to fullfill the requirement
-                    if quote > portion_needed[task_id]:
+                    if quote > portion_needed[task_id] and quote - portion_needed[task_id] >= 20/60:
                         # take out that much amount
                         info['quots'][task_id] = quote - \
                             portion_needed[task_id]
@@ -936,7 +943,7 @@ class Reposition:
                             portion_needed[task_id]
 
                     # if the required amount is perfectly equal to whats available
-                    elif quote == portion_needed[task_id]:
+                    elif quote == portion_needed[task_id] or quote - portion_needed[task_id] < 20/60:
 
                         # add to to_reschedule dict
                         to_reschedule[task_id] = to_reschedule.get(task_id, 0) + \
