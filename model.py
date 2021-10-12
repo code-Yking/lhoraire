@@ -24,8 +24,10 @@ class TaskModel():
         elif self.work <= 10:
             # no of days needed is estimated to H / H**(1/3)
             # this will make sure that the final gradient is around 1
-            self.c = (3*self.work**(1/3)-1)/3
-            self.h = self.c + 1         # TODO when this h is more than min threshold
+            # self.c = (3*self.work**(1/3)-1)/3
+            self.c = (3*self.work**(1/3)-self.work**(2/3)/2)/3
+            # self.h = self.c + 1         # TODO when this h is more than min threshold
+            self.h = self.c + self.work**(2/3)/2
         # TODO work on c which can be customized according to users no of day
 
         # duration
