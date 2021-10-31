@@ -3,7 +3,7 @@ import json
 from json.decoder import JSONDecodeError
 import math
 
-D0 = _d(2000, 1, 1)   # this is the defualt reference point
+D0 = _d(2000, 1, 1)  # this is the defualt reference point
 
 
 def getDateDelta(date):
@@ -12,7 +12,7 @@ def getDateDelta(date):
         date = _d.fromisoformat(date)
 
     delta = date - D0
-    return delta.days - 1               # - 1 to fix the final date as the date before due
+    return delta.days - 1  # - 1 to fix the final date as the date before due
 
 
 def getDatefromDelta(delta):
@@ -35,15 +35,21 @@ def isWeekend(date):
 def save(newtasks):
     to_save = {}
     for name, model in newtasks.items():
-        to_save[model.id] = [model.k, model.gradient, [
-            math.ceil(model.start_day), model.due_date-1], model.today, 0, name[1]]
+        to_save[model.id] = [
+            model.k,
+            model.gradient,
+            [math.ceil(model.start_day), model.due_date - 1],
+            model.today,
+            0,
+            name[1],
+        ]
 
-    with open('tasks.json') as json_file:
+    with open("tasks.json") as json_file:
         try:
             data = json.load(json_file)
             to_save.update(data)
         except JSONDecodeError:
             pass
 
-    with open('tasks.json', 'w') as outfile:
+    with open("tasks.json", "w") as outfile:
         json.dump(to_save, outfile)
