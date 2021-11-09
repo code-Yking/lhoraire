@@ -2,7 +2,7 @@ from datetime import datetime, date as d_
 import json
 from json.decoder import JSONDecodeError
 import math
-import pprint
+
 from .helpers import getDateDelta, getDatefromDelta, isWeekend
 import operator
 import copy
@@ -39,54 +39,24 @@ class Reposition:
 
         self.schedule = self.schedule_cumulation()
         self.oldschedule = oldschedule
-        print(1)
-        pprint.pprint(self.schedule)
-
-        print(self.week_day_work, self.week_end_work)
-        print(self.max_week_day_work, self.max_week_end_work)
 
         self.process_data()
-        print("Processed Schedule")
-        pprint.pprint(self.schedule)
-        print()
-
-        print("Task Range before BASIC reschedule")
-        pprint.pprint(self.task_range)
 
         self.to_reschedule = {
             t: k + self.to_reschedule.get(t, 0)
             for t, k in self.basic_reschedule().items()
         }
 
-        print("Basic Rescheduled Schedule")
-        pprint.pprint(self.schedule)
-        print()
-        print("Initial to_reschedule")
-        # pprint.pprint(to_reschedule)
-        print()
-        print("Initial Sum")
-        pprint.pprint(self.get_task_sums())
-
-        print("Task Range before reschedule")
-        pprint.pprint(self.task_range)
         self.rescheduling()
-        # print(4)
-        # pprint.pprint(self.schedule)
-        # pprint.pprint(to_reschedule)
+
+
+
 
     def set_old_schedule(self):
-        print("\033[91m")
-        pprint.pprint(self.schedule)
-        print("oldschedule")
-        pprint.pprint(self.oldschedule)
 
         self.oldschedule.update(self.schedule)
         self.schedule = self.oldschedule
 
-        print("updated schedule; normal = old update normal")
-        pprint.pprint(self.schedule)
-        print("\033[0m")
-        # self.schedule = schedule
 
     # getting the initial schedule from the tasks
 
@@ -129,7 +99,7 @@ class Reposition:
             start_date = math.floor(task_object.start_day)
             self.task_range[task_id] = [start_date, due_date - 1]
 
-        # print('schedule_cu', schedule_cumulation)
+
         return schedule_cumulation
 
     def process_data(self):
@@ -161,11 +131,6 @@ class Reposition:
         # to prevent infinite loop
         n = 1
         while n < 10:
-            print("LOOP NUMBER ", n)
-
-            pprint.pprint(day_filler_items)
-            print()
-            pprint.pprint(init_day_filler_items)
 
             # For every task that has to be rescheduled
             for task in list(self.to_reschedule.keys()):
@@ -181,25 +146,11 @@ class Reposition:
                     [filtered[x: x + 5] for x in range(0, len(filtered), 5)]
                 )
 
-                if surface:
-                    print("\033[92m", "Surfacing Loop ", task, "\033[0m")
-
-                # print('task dayfilling: ', task)
-                # pprint.pprint(self.to_reschedule)
-                # __to_reschedule = dict(self.to_reschedule)
-                # n = 1
-                # for each group of 5 days in the segmented filtered list
-                print("segmented_filterd")
-                pprint.pprint(segmented_filterd)
-                print()
 
                 # FOR EACH GROUP of 5 in the filtered list of lists
                 # this is so that extra space is divided among groups
                 # instead of days
                 for group_index, group in enumerate(segmented_filterd):
-                    # print("GROUP")
-                    # pprint.pprint(group)
-                    # print(n)
 
                     while len(group):
                         # forming ratio formula
@@ -213,7 +164,7 @@ class Reposition:
 
                         # true surface
                         surface = true_surface
-                        print("SURFACE", surface)
+
 
                         # area which are really small that has to be skipped
                         group_excluded_area = 0
@@ -226,15 +177,11 @@ class Reposition:
                         # used for the areas in this group has to be
                         # in here as the following rounds would need update
                         _to_reschedule = dict(self.to_reschedule)
-                        # print(_to_reschedule, to_reschedule)
+
 
                         # EACH DAY in this group, enumerated and duplicated
                         # as items need to be deleted
                         for i, day in enumerate(list(group)):
-                            print("TASK: ", task)
-                            print("Day:", getDatefromDelta(day[3]))
-                            print("to_reschedule BEFORE:")
-                            pprint.pprint(self.to_reschedule)
 
                             # gonna be there in the list
                             list_i = day_filler_items.index(day)
@@ -262,10 +209,6 @@ class Reposition:
                                 / denominator
                             )
 
-                            print("GROUP LENGTH:", len(group))
-                            print("REQUIRED AREA: ", required_area)
-
-                            # TODO exchange this with helper method
                             # and remove item from list
                             isWeekend = day[2]
 
@@ -276,7 +219,6 @@ class Reposition:
                                 diff = self.schedule[day[3]]["data"][
                                     "difference"
                                 ]
-                                print("schedule diff", diff)
 
                                 # if there is no difference or
                                 # if it is really small
@@ -309,7 +251,6 @@ class Reposition:
                                             + extra_hours
                                         )
                                         days_final = True
-                                    print("surface diff", diff)
 
                             # day is not in the schedule,
                             # should be a new precedence day, gets defaults
@@ -322,17 +263,8 @@ class Reposition:
 
                             # STILL no space in this day; day is removed and
                             # skipped
-                            # TODO check possibility for this,
                             # make sure no filled days are sent
                             if diff < 0.001:
-                                print(
-                                    "DAY SKIPPED and REMOVED",
-                                    getDatefromDelta(day[3]),
-                                    "This day has no free space, diff < 0.001 \
-after figuring;",
-                                )
-                                print("---- end of day ----")
-                                pprint.pprint(self.schedule.get(day[3], {}))
                                 continue
 
                             # calculating available area,
@@ -348,8 +280,7 @@ after figuring;",
                                 / sum([1 / n for n in days_to_dues])
                                 * diff
                             )
-                            print("diff: ", diff)
-                            print("AVAILABLE AREA:", available_area)
+
 
                             # assigning portion that is going to be used
                             # according to the free and requierd area
@@ -357,10 +288,6 @@ after figuring;",
                                 portion_used = required_area
 
                             elif required_area >= available_area:
-                                print(
-                                    "DAY REMOVED",
-                                    "required_area >= available_area",
-                                )
                                 portion_used = available_area
                                 # day is removed from the group as it is filled
                                 # if day in group:
@@ -368,30 +295,12 @@ after figuring;",
                                 # calculations as constants outside loop
                                 group.remove(day)
 
-                            print("Portion Used", portion_used)
 
                             # if the portion to be used has less than
                             # 20 mins of work
                             if portion_used + self.schedule.get(
                                 day[3], {}
                             ).get("quots", {}).get(task, 0) < float(20 / 60):
-                                # adds to a variable the hours
-                                # group_excluded_area += portion_used
-
-                                print(
-                                    "DAY SKIPPED",
-                                    "this day has less than 20mins of this \
-task",
-                                )
-
-                                # if groups alloted reschedule hours is greater
-                                # than 1 hour, and day is not removed
-                                # if _to_reschedule[task] > 1 and day in group:
-                                print(
-                                    "DAY REMOVED & SKIPPED",
-                                    "this task has less than 1 hour of \
-to_reschedule",
-                                )
 
                                 # day is removed from group as this would
                                 if day in group:
@@ -404,19 +313,9 @@ to_reschedule",
                                             segmented_filterd[
                                                 group_index + 1
                                             ].insert(0, day)
-                                        # if not day_updated:
-                                        #     day_filler_items[list_i][0] -= 1
-                                        #     day_filler_items[list_i][1].pop(
-                                        #         task_index)
-                                        #     day_filler_items[list_i][5].pop(
-                                        #         task_index)
-                                        #     day_updated = True
-                                print("---- end of day ----")
                                 continue
 
-                            # print("segmented_filterd 3")
-                            # pprint.pprint(segmented_filterd)
-
+                            # update info
                             self.to_reschedule[task] = round(
                                 self.to_reschedule.get(task) - portion_used, 5
                             )
@@ -435,19 +334,13 @@ to_reschedule",
                                 diff - portion_used
                             )
 
-                            # print(group)
+                            # remove day from group
                             if day in group:
                                 group.remove(day)
 
+                            # prevents day from being reiterated if no space
                             if diff - portion_used <= 0.001:
-                                # if (day in day_filler_items
-                                # and not surface
-                                # and self.to_reschedule[task] >
-                                # self.task_total[task]/3) \
-                                # if (day in day_filler_items)
-                                # and (days_final or not surface)
-                                # and not day_updated:
-                                print(f"{day[3]} in day filler items, removed")
+
                                 day_filler_items.remove(day)
                                 day_updated = True
 
@@ -467,14 +360,8 @@ to_reschedule",
                                             )
                                         )[0]
                                     )
-                                    print(
-                                        f"{day[3]} in init day filler items, \
-removed"
-                                    )
-                                    day_updated = True
 
-                            # print("segmented_filterd 4")
-                            # pprint.pprint(segmented_filterd)
+                                    day_updated = True
 
                             if task in self.schedule[day[3]]["quots"].keys():
                                 self.schedule[day[3]]["quots"][task] = (
@@ -485,7 +372,7 @@ removed"
                                 self.schedule[day[3]]["quots"][
                                     task
                                 ] = portion_used
-                                # print(dues)
+
                                 if (
                                     "days_to_due"
                                     in self.schedule[day[3]]["data"]
@@ -498,42 +385,12 @@ removed"
                                         "days_to_due"
                                     ] = {task: due}
 
-                            # if day in group:
-                            #     day[0] -= 1
-                            #     day[1].pop(task_index)
-                            #     day[5].pop(task_index)
-
-                            print("init_day BEFORE")
-                            # print(init_day_filler_items)
-
                             if not day_updated:
                                 day_filler_items[list_i][0] -= 1
                                 day_filler_items[list_i][1].pop(task_index)
                                 day_filler_items[list_i][5].pop(task_index)
 
-                            # print('day_filler')
-                            # print(day_filler_items)
-                            # print('init_day AFTER')
-                            # print(init_day_filler_items)
 
-                            print(
-                                "schedule updated for",
-                                getDatefromDelta(day[3]),
-                            )
-                            pprint.pprint(self.schedule[day[3]])
-                            print("to_reschedule AFTER:")
-                            pprint.pprint(self.to_reschedule)
-                            print("sum AFTER")
-                            print(self.get_task_sums()[task])
-                            print(self.get_task_sums())
-                            print("---- end of day ----")
-                            print()
-                            # day[4] += portion_used
-
-                            # if len(day[1]) == 0:
-                            #     group.remove(day)
-
-                        # print('after', _to_reschedule, self.to_reschedule)
                         # if no free space in the group, then break
                         group_diff = sum(
                             [
@@ -544,16 +401,6 @@ removed"
                             ]
                         )
 
-                        # segment_diff += group_diff
-
-                        # print(group_diff, [getDatefromDelta(day[3])
-                        #    for day in group])
-
-                        # if group_diff - group_excluded_area < 0.001:
-                        #     break
-
-                        # surface = False
-
                         # does not need to proceed
                         # if this task no longer needs to be rescheduled
                         if self.to_reschedule[task] <= 0.001:
@@ -561,8 +408,6 @@ removed"
 
                     if self.to_reschedule[task] <= 0.001:
                         break
-
-                print("n is ", n)
 
                 # if very less hours remain to be rescheduled.
                 if self.to_reschedule[task] <= 0.001:
@@ -576,18 +421,16 @@ removed"
                     # from init_day_filler_items
                     for day in init_day_filler_items:
                         if task in day[1]:
-                            # TODO check this out
                             # if day filler item has only one day,
                             # removes the item
                             if day[0] == 1:
-                                print("DELETING DAYS")
+
                                 init_day_filler_items.remove(day)
                                 # if day in day_filler_items:
                                 #     day_filler_items.remove(day)
                             else:
                                 # else edits the day filler items
-                                print("EDITTING GROUPED DAYS")
-                                # print(task, day[1])
+
                                 in_item_i = init_day_filler_items.index(day)
                                 init_day_filler_items[in_item_i][0] -= 1
                                 index = init_day_filler_items[in_item_i][
@@ -610,13 +453,10 @@ removed"
                                 day_filler_items[item_i][5].pop(index)
 
             n += 1
-            print("\033[94m", self.to_reschedule, "\033[0m")
+
 
             if not len(self.to_reschedule) or not len(day_filler_items):
                 break
-
-            pprint.pprint(day_filler_items)
-            pprint.pprint(init_day_filler_items)
 
             day_filler_items = list(
                 filter(
@@ -627,20 +467,11 @@ removed"
                 )
             )
             # day_filler_items = copy.deepcopy(init_day_filler_items)
-            # if not surface and len(day_filler_items):
-
-        print("\033[96m")
-        pprint.pprint(day_filler_items)
-        print("\033[0m")
-        # print('NEW')
-        # pprint(schedule)
-        # pprint(self.to_reschedule)
 
     # produce day filler items for filling in days that are
     # already in the schedule
 
     def reschedulable_days(self, surface=False):
-        # TODO fix this to disinclude empty items
         # array of days that contain details of tasks that can be
         # resceduled into those days
         weekend_days, weekday_days = [], []
@@ -700,7 +531,6 @@ removed"
                     and task in self.to_reschedule.keys()
                 ):
                     # if task has value of 0 in to_reschedule
-                    # TODO make sure that to_reschedule becomes 0
                     if self.to_reschedule[task] == 0:
                         continue
 
@@ -729,7 +559,7 @@ removed"
         # dict with days and the tasks that can be done on these days
         precede_days_dict = {}
 
-        # print(self.to_reschedule, self.task_range)
+
 
         # iterate through the tasks that have hours to be rescheduled
         for task, hours in self.to_reschedule.items():
@@ -738,7 +568,6 @@ removed"
                 continue
 
             # if start date of the task is tomorrow, continue
-            # TODO WHY IS IT TODAY+1
             if self.task_range[task][0] == getDateDelta(self.today) + 1:
                 continue
             # if 5 less than start date of task is still more than tomorrow
@@ -779,8 +608,8 @@ removed"
                 ]
             )
 
-        print("precede days")
-        pprint.pprint(precede_days)
+
+
 
         return precede_days
 
@@ -800,7 +629,7 @@ removed"
                         + area_rm
                     )
                     self.schedule[last_date]["quots"].pop(t)
-                    # pprint.pprint(self.schedule)
+
                     self.schedule[last_date]["data"]["days_to_due"].pop(t)
 
                     self.to_reschedule[t] = (
@@ -809,7 +638,7 @@ removed"
 
                     if last_date == self.task_range[t][0]:
                         self.task_range[t][0] = last_date + 1
-                    # print(t, self.task_range[t])
+
 
     def rescheduling(self):
         self.free_final_days()
@@ -819,12 +648,7 @@ removed"
         work_difference = (
             self.week_end_work - self.week_day_work
         )  # no of extra hours for weekends
-        print(
-            "work difference",
-            work_difference,
-            self.week_end_work,
-            self.week_day_work,
-        )
+
 
         # this will collect the days that can be rescheduled into
         weekday_days, weekend_days = self.reschedulable_days()
@@ -849,18 +673,18 @@ removed"
         # combined = list(weekend_days + weekday_days)
         # schedule_ = self.schedule
         # to_resch_ = self.to_reschedule
-        # print(self.to_reschedule)
+
         self.day_filling(list(weekend_days + weekday_days))
 
         for task, hours in dict(self.to_reschedule).items():
             if hours < 0.001:
                 self.to_reschedule.pop(task)
 
-        pprint.pprint(self.to_reschedule)
+
 
         self.set_old_schedule()
 
-        # print('to_reschedule before precedence', self.to_reschedule)
+
         precedence_available = True
 
         # if there are tasks that still needs to be rescheduled
@@ -881,7 +705,6 @@ removed"
             weekday_days, weekend_days = self.reschedulable_days(True)
 
             # sort these days such that earlier comes first
-            # TODO see if there is a better option
             # weekend_days.sort(key=operator.itemgetter(3), reverse=True)
             weekend_days.sort(key=operator.itemgetter(0, 4, 2))
             # weekday_days.sort(key=operator.itemgetter(3), reverse=True)
@@ -892,27 +715,12 @@ removed"
             )
 
             if not precedence_available:
-                print("end of process")
+
                 break
 
         self.finalise_schedule()
         self.finalise_to_reschedule()
-        print("Sums: ", self.get_task_sums())
 
-    def update_schedule(self):
-        with open("schedule.json") as schedule_json:
-            try:
-                schedule = json.load(schedule_json)
-            except JSONDecodeError:
-                schedule = {}
-        _schedule = dict(schedule)
-        for day in _schedule.keys():
-            dayDelta = getDateDelta(day)
-            schedule[dayDelta] = schedule.pop(day)
-
-        # print(schedule)
-        schedule.update(self.schedule)
-        self.schedule = schedule
 
     def finalise_schedule(self):
         _schedule = dict(self.schedule)
@@ -939,24 +747,13 @@ removed"
 
     def worked_tasks(self):
         taskInfo = {}
-        for task, range in self.task_range.items():  # TODO why this
+        for task, range in self.task_range.items(): 
             taskInfo[int(f"{task.strip('t')}")] = [
                 range[0],
                 self.to_reschedule.get(task, 0),
             ]
         return taskInfo
 
-    def output_schedule(self):
-        with open("schedule.json") as schedule_json:
-            try:
-                schedule = json.load(schedule_json)
-            except JSONDecodeError:
-                schedule = {}
-
-        schedule.update(self.schedule)
-
-        with open("schedule.json", "w") as outfile:
-            json.dump(schedule, outfile, indent=4, sort_keys=True)
 
     # PLAN:
     # Find difference where -ve,
@@ -1096,3 +893,30 @@ removed"
                 # which the residual is ignored
 
         return to_reschedule
+
+# these functions are never called
+def update_schedule(self):
+        with open("schedule.json") as schedule_json:
+            try:
+                schedule = json.load(schedule_json)
+            except JSONDecodeError:
+                schedule = {}
+        _schedule = dict(schedule)
+        for day in _schedule.keys():
+            dayDelta = getDateDelta(day)
+            schedule[dayDelta] = schedule.pop(day)
+
+        schedule.update(self.schedule)
+        self.schedule = schedule
+        
+def output_schedule(self):
+    with open("schedule.json") as schedule_json:
+        try:
+            schedule = json.load(schedule_json)
+        except JSONDecodeError:
+            schedule = {}
+
+    schedule.update(self.schedule)
+
+    with open("schedule.json", "w") as outfile:
+        json.dump(schedule, outfile, indent=4, sort_keys=True)

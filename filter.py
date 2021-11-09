@@ -1,4 +1,4 @@
-import pprint
+
 from .helpers import getDateDelta, isWeekend, save
 import json
 from json.decoder import JSONDecodeError
@@ -64,7 +64,7 @@ def Filter(
     grouped_tasks = []
     # each list of tasks inside grouped_tasks would belong within the limits
     # present in union_ranges under same index
-    print("init union_ranges", unique_ranges)
+
     # getting the union of the limits from unique_ranges and getting the
     # respective tasks into the above lists
     for begin, end in sorted(unique_ranges):
@@ -80,10 +80,10 @@ def Filter(
         else:
             union_ranges.append([begin, end])
             grouped_tasks.append(inverted_tasks.get((begin, end)))
-        print(union_ranges)
+
     # lists are converted to tuples so they are hashable
     union_ranges = [(k, w) for k, w in union_ranges]
-    print("union_ranges", union_ranges)
+
     # producing a dictionary from both the lists
     union_range_tasks = dict(zip(union_ranges, grouped_tasks))
 
@@ -113,7 +113,7 @@ def Filter(
                             # modified_date = oldtasks[n][4]
                             # TODO just recheck why this is needed
                             id = str(n.strip("t"))
-                            print(n)
+
                             task = TaskModel(
                                 id=id,
                                 due=due_date,
@@ -144,13 +144,13 @@ def set_old_schedule(
     extrahours,
 ):
     days = []
-    print("DAY RANGES    ", day_ranges)
+
 
     # expand out the days that are present in each range
     for dayrange in day_ranges:
         for day in range(dayrange[0], dayrange[1] + 1):
             days.append(day)
-    print("DAYS   ", days)
+
 
     # modify old schedule, remove unwanted days, change to dayDelta number,
     # set difference and sum
@@ -185,17 +185,17 @@ def set_old_schedule(
             "sum": sum_of_tasks,
         }
 
-    print("\033[91m")
-    # pprint.pprint(self.schedule)
-    print("oldschedule")
-    pprint.pprint(oldschedule)
+
+
+
+
 
     # oldschedule.update(self.schedule)
     # self.schedule = oldschedule
 
-    # print('updated schedule; normal = old update normal')
-    # pprint.pprint(self.schedule)
-    print("\033[0m")
+
+
+
 
     return oldschedule
     # self.schedule = schedule
