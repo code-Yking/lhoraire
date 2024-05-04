@@ -1,4 +1,4 @@
-scipy==1.7.0
+scipy==1.11.1
 # scipy is needed for the mathematical model
 
 # These are needed only for demo.py:
